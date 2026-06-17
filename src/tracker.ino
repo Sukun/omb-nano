@@ -52,7 +52,9 @@ void setup(){
       sleep_for_seconds(5);
       board_thermistors_manager.get_and_push_data();
       sleep_for_seconds(5);
+#ifdef USE_IRIDIUM
       iridium_manager.attempt_transmit_thermistors_packets(1);
+#endif
       sleep_for_seconds(5);
     }
   #endif
@@ -62,7 +64,9 @@ void setup(){
     sleep_for_seconds(5);
     gnss_manager.get_and_push_fix(3UL * 60UL);
     sleep_for_seconds(5);
+#ifdef USE_IRIDIUM
     iridium_manager.attempt_transmit_gps_fixes(1);
+#endif
     sleep_for_seconds(5);
   }
 
@@ -71,7 +75,9 @@ void setup(){
     sleep_for_seconds(5);
     board_wave_analyzer.gather_and_analyze_wave_data();
     sleep_for_seconds(5);
+#ifdef USE_IRIDIUM
     iridium_manager.attempt_transmit_wave_spectra();
+#endif
     sleep_for_seconds(5);
   }
 
@@ -95,9 +101,11 @@ void setup(){
       board_time_manager.print_posix_status();
       wdt.restart();
 
+#ifdef USE_IRIDIUM
       iridium_manager.attempt_transmit_gps_fixes(1);
+#endif
       wdt.restart();
-      
+
       // we are done, ready to loop
       break;
     }
@@ -117,7 +125,9 @@ void setup(){
       blink_LED_n_times(8, 1.0);
       Serial.println(F("initial thermistors data acquisition..."));
       board_thermistors_manager.get_and_push_data();
+#ifdef USE_IRIDIUM
       iridium_manager.attempt_transmit_thermistors_packets(1);
+#endif
       delay(100);
     }
   #endif
@@ -128,7 +138,9 @@ void setup(){
     blink_LED_n_times(4, 1.0);
     Serial.println(F("initial wave spectrum acquisition..."));
     board_wave_analyzer.gather_and_analyze_wave_data();
+#ifdef USE_IRIDIUM
     iridium_manager.attempt_transmit_wave_spectra();
+#endif
     delay(100);
   }
 
@@ -197,10 +209,13 @@ void loop(){
   // If the first iridium attempt goes through, transmit as much data as possible as a burst
   // the strategy is the following: if the initial transmission was successful, keep trying transmitting
   // in the limit of a max transmission time.
+#ifdef USE_IRIDIUM
   bool any_successful_transmit {false};
+#endif
 
   if (gnss_fix){
-    Serial.println(F("got GNSS fix, so good chances that iridium is good"));
+    Serial.println(F("got GNSS fix"));
+#ifdef USE_IRIDIUM
     Serial.println(F("start transmission burst"));
 
     unsigned long time_start_transmission_burst = millis();
@@ -263,10 +278,11 @@ void loop(){
     wdt.restart();
 
     Serial.println(F("end transmission burst"));
+#endif
   }
 
   else{
-    Serial.println(F("no GNSS fix, and iridium will likey not go through either"));
+    Serial.println(F("no GNSS fix"));
   }
 
   wdt.restart();
@@ -278,9 +294,11 @@ void loop(){
     if (take_thermistors_measurement){
       board_thermistors_manager.get_and_push_data();
       wdt.restart();
+#ifdef USE_IRIDIUM
       if (any_successful_transmit){
         iridium_manager.attempt_transmit_thermistors_packets(min_default_nbr_thermistor_packets);
       }
+#endif
     }
     wdt.restart();
   #endif
@@ -292,9 +310,11 @@ void loop(){
   if (take_spectrum_measurement){
     board_wave_analyzer.gather_and_analyze_wave_data();
     wdt.restart();
+#ifdef USE_IRIDIUM
     if (any_successful_transmit){
       iridium_manager.attempt_transmit_wave_spectra();
     }
+#endif
   }
   wdt.restart();
 

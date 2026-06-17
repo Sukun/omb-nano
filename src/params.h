@@ -115,6 +115,12 @@ static_assert(min_nbr_of_fix_per_message <= max_nbr_GPS_fixes_per_message);  // 
 //--------------------------------------------------------------------------------
 // iridium parameters
 
+// Iridium (RockBLOCK 9603) is DNP (not mounted) on the simplified PCB. Leave USE_IRIDIUM
+// undefined so that all iridium transmit calls in tracker.ino are compiled out
+// (#ifdef USE_IRIDIUM). The iridium_manager / IridiumSBD library still compile and link.
+// To re-enable iridium (only if the module is actually mounted), uncomment the next line:
+// #define USE_IRIDIUM
+
 // parameter for max time for charging the supercaps
 // this may need to be increased for very weak power solutions
 // for a max charging time of 2 minutes, put 2UL * 60UL

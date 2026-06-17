@@ -35,10 +35,14 @@
 
 ---
 
-## Phase 1 — 去铱星（适配简化版 PCB，铱星模块未贴）  *(待执行)*
+## Phase 1 — 去铱星（适配简化版 PCB，铱星模块未贴）  *(已完成，commit #2)*
 
-- `src/tracker.ino`：用 `#ifndef USE_IRIDIUM … #endif` 条件编译包裹所有 `iridium_manager.*` 调用（`params.h` 不定义该宏 → 编译期消失）。保留 `#include "iridium_manager.h"` 与 `iridium_manager.cpp` 参与编译（`<IridiumSBD.h>` 库仍在）。
+- `src/params.h`：铱星参数区新增开关与说明，默认 `// #define USE_IRIDIUM`（注释/不定义）。将来真装模块时取消注释即可恢复铱星。
+- `src/tracker.ino`：用 **`#ifdef USE_IRIDIUM … #endif`** 条件编译包裹**全部** `iridium_manager.*` 调用（发送/状态查询）、`any_successful_transmit` 声明、整个发送突发块；并把日志措辞改干净。保留 `#include "iridium_manager.h"` 与 `iridium_manager.cpp` 参与编译（`<IridiumSBD.h>` 库仍链接）。
+  - 注意：正确方向是 `#ifdef`（宏未定义→剔除），非计划初稿误写的 `#ifndef`。
 - 不改 `board_control.cpp`：其 `iridiumSleep`(p35) 写 LOW 在无模块时为无害空操作。
+- 验证：编译通过，`src/build/tracker.ino.bin` 124648 字节（较 Phase 0 的 136376 减小约 11.7KB，未引用的铱星收发代码被 linker 剔除）。
+- GNSS/IMU/波浪谱/睡眠/看门狗逻辑未改动，功能保留。
 
 ---
 
