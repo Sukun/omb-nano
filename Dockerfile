@@ -38,6 +38,15 @@ RUN git clone -b "feat/propagate_bool_flags" --depth=1 https://github.com/jeraba
 RUN rm -rf OneWire
 RUN git clone -b "feat/Artemis_compatible" --depth=1 https://github.com/jerabaul29/OneWire.git
 
+# SD card support (simplified PCB adds a microSD card on non-IOM GPIOs -> software SPI).
+# SdFat's SoftSpiDriver allows bit-banged SPI on arbitrary pins; it is enabled by setting
+# SPI_DRIVER_SELECT to 2 in SdFatConfig.h. We patch the installed config so all SdFat
+# translation units agree on the setting (defining it only in the sketch would cause an
+# ODR mismatch with the separately-compiled library .cpp files).
+RUN arduino-cli lib install "SdFat@2.2.3"
+RUN sed -i 's/#define SPI_DRIVER_SELECT 0/#define SPI_DRIVER_SELECT 2/' /root/Arduino/libraries/SdFat/src/SdFatConfig.h \
+    && grep -n "define SPI_DRIVER_SELECT" /root/Arduino/libraries/SdFat/src/SdFatConfig.h
+
 WORKDIR /tracker
 
 # ADD src .

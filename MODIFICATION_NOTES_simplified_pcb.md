@@ -46,12 +46,19 @@
 
 ---
 
-## Phase 2 — SD 卡数据记录（新增元件）  *(待执行 / 视编译难度可能推迟)*
+## Phase 2 — SD 卡数据记录（新增元件）  *(已完成，commit #3)*
 
-- `src/Dockerfile`：追加 SD 库（SdFat）。
-- `src/board_control.h`：SD 引脚 `SD_CS=27, SD_MOSI=26, SD_SCK=28, SD_MISO=25, SD_CD=22`（来自 PCB设计决策记录.md §六）。
-- 新增 `src/sd_manager.h/.cpp`：`GNSS.CSV` / `WAVES.CSV` 追加写；每次 open→append→flush→close。
-- 写入时序（U27 150mA 限额）：GPS 关断后再写、波谱算完后再写，避免与 GPS 60mA 叠加。
+- `src/Dockerfile`：`arduino-cli lib install "SdFat@2.2.3"` + sed 补丁把 `SPI_DRIVER_SELECT` 改为 2（启用软件 SPI；全局补丁以保证 SdFat 各编译单元一致）。
+- `src/board_control.h`：SD 引脚 `SD_CS=27, SD_MOSI=26, SD_SCK=28, SD_MISO=25, SD_CD=22`（来自 PCB设计决策记录.md §六）。注明为软件 SPI（这些引脚不是硬件 IOM pad）。
+- 新增 `src/sd_manager.h/.cpp`：`SoftSpiDriver<MISO=25,MOSI=26,SCK=28>` 软件 SPI + `SdFat32`；`GNSS.CSV`（posix,lat_1e7,lon_1e7）/ `WAVES.CSV`（posix,谱号,Hs,Tz,Tc,max,55 频段）追加写；每次 open→append→flush→close；**无卡时 setup() 优雅失败、所有写入安全跳过，不阻塞主流程**。
+- `src/tracker.ino`：`setup()` 调 `board_sd_manager.setup()` 挂载；在初始/循环定位的 **GPS 断电后**、波谱 **IMU 停后** 调 `log_latest_*`（满足电流错峰时序）。
+- 选 SdFat 软件 SPI 的原因：SD 引脚（25/26/27/28）是任意 GPIO，不对齐 Apollo3 任何硬件 SPI IOM 的 pad，故必须用 bit-banged 软件 SPI。
+- 验证：重建镜像 + 编译通过，`src/build/tracker.ino.bin` 132104 字节（较 Phase 1 的 124648 增约 7.5KB = SdFat + 软件 SPI 代码）。
+- 注意：编译通过不等于真机可用；软件 SPI 引脚时序与 SD 卡兼容性需真板验证（本轮按用户要求不做真机验证）。
+
+### 烧录与 SD 卡
+
+- `src/build/tracker.ino.bin` **同时适用于插卡与不插卡**两种情况：上电时 `setup()` 探测 SD，无卡则记录功能自动禁用，GNSS/IMU/波浪谱照常运行。无需为"不插卡"单独编译固件。
 
 ---
 

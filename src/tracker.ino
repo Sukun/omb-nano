@@ -11,6 +11,7 @@
 #include "data_manager.h"
 #include "wave_analyzer.h"
 #include "thermistors_manager.h"
+#include "sd_manager.h"
 
 // TODO: board_imu_manger -> board_imu_manager
 
@@ -30,6 +31,11 @@ void setup(){
   turn_on();
   wdt.restart();
   Serial.flush();
+
+  // initialise SD card logging (software SPI on the simplified-PCB SD pins).
+  // Safe no-op if no card is present; the data sink that replaces the DNP iridium link.
+  board_sd_manager.setup();
+  wdt.restart();
 
   // offer a print of the params used for the setup of the instrument
   print_params();
@@ -101,6 +107,10 @@ void setup(){
       board_time_manager.print_posix_status();
       wdt.restart();
 
+      // GNSS is already powered down inside get_and_push_fix; safe to write SD now
+      board_sd_manager.log_latest_gnss_fix();
+      wdt.restart();
+
 #ifdef USE_IRIDIUM
       iridium_manager.attempt_transmit_gps_fixes(1);
 #endif
@@ -138,6 +148,8 @@ void setup(){
     blink_LED_n_times(4, 1.0);
     Serial.println(F("initial wave spectrum acquisition..."));
     board_wave_analyzer.gather_and_analyze_wave_data();
+    // IMU acquisition finished; safe to write SD (no current overlap)
+    board_sd_manager.log_latest_wave_packet();
 #ifdef USE_IRIDIUM
     iridium_manager.attempt_transmit_wave_spectra();
 #endif
@@ -215,6 +227,9 @@ void loop(){
 
   if (gnss_fix){
     Serial.println(F("got GNSS fix"));
+    // GNSS already powered down in get_and_push_fix; write the fix to SD
+    board_sd_manager.log_latest_gnss_fix();
+    wdt.restart();
 #ifdef USE_IRIDIUM
     Serial.println(F("start transmission burst"));
 
@@ -309,6 +324,9 @@ void loop(){
 
   if (take_spectrum_measurement){
     board_wave_analyzer.gather_and_analyze_wave_data();
+    wdt.restart();
+    // IMU acquisition finished; write the spectrum to SD (no current overlap)
+    board_sd_manager.log_latest_wave_packet();
     wdt.restart();
 #ifdef USE_IRIDIUM
     if (any_successful_transmit){

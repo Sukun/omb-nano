@@ -29,6 +29,15 @@
 // If you do, bad things might happen to the AS179 RF switch!
 #define IMUPwr             31 // Powers the IMU.
 
+// microSD card (CARD1) — simplified-PCB addition.
+// NOTE: these are arbitrary GPIOs, NOT the pads of a hardware SPI IOM, so the firmware
+// drives the card with software (bit-banged) SPI via SdFat SoftSpiDriver (see sd_manager.*).
+#define SD_CS_PIN          27 // CARD1 pin 2 (CD/DAT3) -> chip select
+#define SD_MOSI_PIN        26 // CARD1 pin 3 (CMD)
+#define SD_SCK_PIN         28 // CARD1 pin 5 (CLK)
+#define SD_MISO_PIN        25 // CARD1 pin 7 (DAT0)
+#define SD_CD_PIN          22 // CARD1 pin 9 (card detect, optional)
+
 // custom pins for the thermistors
 /* #define THERMISTORS_ONE_WIRE_PIN 35  // the data pin; I suggest to put a 100 Ohm between the pin and the sensors; this way, if a cable is cut / shorted, will not burn the pin */
 /* #define THERMISTORS_POWER_PIN 4  // the power pin; use a digital pin to be able to switch power on and off */
