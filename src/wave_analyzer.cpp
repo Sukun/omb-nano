@@ -121,6 +121,20 @@ void WaveAnalyzer::perform_welch_analysis_imu_data(void){
     return;
   }
 
+  // defensive bounds guard: the Welch loop below reads up to index
+  // (start_offset + (number_welch_segments-1)*fft_overlap + fft_length - 1).
+  // If total_number_of_samples is configured too small for the hard-coded
+  // number_welch_segments / fft_length (e.g. testing DEPLOYMENT_MODE), this would
+  // read out of bounds of the data manager. Abort safely instead of UB.
+  constexpr size_t welch_start_offset = 50;
+  constexpr size_t welch_required_samples = welch_start_offset + (number_welch_segments - 1) * fft_overlap + fft_length;
+  if (board_data_manager.size() < welch_required_samples){
+    Serial.print(F("not enough samples for the Welch segments (need "));
+    Serial.print(welch_required_samples); Serial.print(F(", have ")); Serial.print(board_data_manager.size());
+    Serial.println(F("); abort to avoid out-of-bounds read!"));
+    return;
+  }
+
   wdt.restart();
 
   clear_working_welch_spectrum();
@@ -304,7 +318,7 @@ void WaveAnalyzer::clear_working_wave_packet(void){
   working_wave_packet.Hs = -1.0f;
   working_wave_packet.max_value = -1.0f;
   for (int i=0; i<nbr_wave_packet_freqs; i++){
-    working_wave_packet.array_pwelch[nbr_wave_packet_freqs] = 0;
+    working_wave_packet.array_pwelch[i] = 0;  // FIX: was indexing with the constant nbr_wave_packet_freqs (out-of-bounds write + array not cleared)
   }
   wdt.restart();
 }

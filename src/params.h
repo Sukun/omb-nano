@@ -83,6 +83,13 @@ constexpr int i2c_port_number {0}; // for IMU
     constexpr size_t total_number_of_samples {100};
 #elif (DEPLOYMENT_MODE == 2)
     #define DEPLOYMENT_INFO "Malin setup"
+    // "Malin setup" is a real-deployment profile (15 min GNSS interval, 1 h no-fix sleep).
+    // WARNING: this profile is INCOMPLETE. Unlike modes 0/1 it does NOT define
+    //   `total_number_of_samples` (used by wave_analyzer / data_manager) nor
+    //   `timeout_attempt_transmit_seconds` (used by iridium). Enabling it as-is fails to
+    //   compile with confusing "undeclared identifier" errors reported far from here.
+    //   Define both constants in this block before using DEPLOYMENT_MODE 2.
+    #error "DEPLOYMENT_MODE 2 (Malin setup) is incomplete: define total_number_of_samples and timeout_attempt_transmit_seconds in this block before enabling it."
 
     constexpr unsigned long timeout_first_fix_seconds = 2UL * 60UL;
     constexpr long sleep_no_initial_fix_seconds = 60L * 60L;

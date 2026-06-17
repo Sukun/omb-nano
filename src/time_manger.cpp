@@ -94,7 +94,7 @@ struct_YMDHMS common_working_struct_YMDHMS;
 
 time_t& posix_timestamp_from_YMDHMS(int year, int month, int day, int hour, int minute, int second){
   common_working_time_struct.Year = year - 1970; // years since 1970, so deduct 1970
-  common_working_time_struct.Month = month;  // months start from 0, so deduct 1
+  common_working_time_struct.Month = month;  // Time library uses 1-based months (1..12), same as u-blox getMonth(); no offset needed
   common_working_time_struct.Day = day;
   common_working_time_struct.Hour = hour;
   common_working_time_struct.Minute = minute;

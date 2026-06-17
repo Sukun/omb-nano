@@ -20,9 +20,6 @@ bool GNSS_Manager::setup() {
   if (!gnss.begin(GnssWire, 0x42)){
     Serial.println(F("problem starting GNSS"));
     return false;
-
-    // power things down
-    delay(500);
   } else{
     Serial.println(F("success starting GNSS"));
   }
@@ -68,9 +65,6 @@ bool GNSS_Manager::sleep(unsigned long duration) {
   if (!gnss.begin(GnssWire, 0x42)){
     Serial.println(F("problem starting GNSS"));
     return false;
-
-    // power things down
-    delay(500);
   } else{
     Serial.println(F("success starting GNSS"));
   }
