@@ -77,7 +77,8 @@ void setup(){
   }
 
   // to thest the functionalities: sleep, waves measurements
-  if (false){
+  // [TEST-MODE] 启用 IMU 调试块：在跳过 GNSS 的情况下直接采集 IMU 数据并输出到串口
+  if (true){
     sleep_for_seconds(5);
     board_wave_analyzer.gather_and_analyze_wave_data();
     sleep_for_seconds(5);
@@ -96,7 +97,8 @@ void setup(){
   // attempt to get an initial GNSS fix, to both 1) check that sky access, 2) know when to wake up
   // if get the fix, also (attempt to) transmit it at once to let know we booted
   // if cannot get an initial fix, we do not have a clear view of the sky: sleep and re-try later
-  while (true){
+  // [TEST-MODE] 跳过 GNSS 定位循环：无天线时会无限重试卡死，改为 while(false) 直接跳过
+  while (false){
     blink_LED_n_times(2, 1.0);
 
     Serial.println(F("attempt initial fix"));
@@ -144,7 +146,8 @@ void setup(){
 
   // once we have got a GNSS fix, also try to get a wave spectrum and transmit it at once. This way,
   // we can check that "all is working well" on the board
-   if (use_wave_measurements) {
+  // [TEST-MODE] 跳过第二次波浪测量：上方调试块已采集过 IMU，避免重复
+   if (false) {
     blink_LED_n_times(4, 1.0);
     Serial.println(F("initial wave spectrum acquisition..."));
     board_wave_analyzer.gather_and_analyze_wave_data();

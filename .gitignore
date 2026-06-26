@@ -1,3 +1,8 @@
 /src/build/
 /src/tracker.ino.axf
 /src/Makefile
+
+.DS_Store
+*.log
+test_small.bin
+temp.txt

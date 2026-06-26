@@ -22,7 +22,7 @@ constexpr int i2c_port_number {0}; // for IMU
 // first declare the variables and document
 // then use if constexpr to set the values
 // TODO: test on a small snippet first...
-#define DEPLOYMENT_MODE 0
+#define DEPLOYMENT_MODE 1
 
 //--------------------------------------------------------------------------------
 // GNSS params
