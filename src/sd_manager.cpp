@@ -103,3 +103,23 @@ void SDManager::log_latest_wave_packet(void){
   Serial.println(F("SD: logged wave packet"));
   wdt.restart();
 }
+
+bool SDManager::write_test_file(void){
+  if (!ready){
+    Serial.println(F("SD: not ready, skip test file"));
+    return false;
+  }
+  File32 file = sd.open("TEST.TXT", O_WRITE | O_CREAT | O_APPEND);
+  if (!file){
+    Serial.println(F("SD: cannot open TEST.TXT"));
+    return false;
+  }
+  file.print(millis());
+  file.print(F(",SD test ok"));
+  file.println();
+  file.flush();
+  file.close();
+  Serial.println(F("SD: wrote TEST.TXT"));
+  wdt.restart();
+  return true;
+}

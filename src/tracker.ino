@@ -81,6 +81,7 @@ void setup(){
   if (true){
     sleep_for_seconds(5);
     board_wave_analyzer.gather_and_analyze_wave_data();
+    board_sd_manager.write_test_file();  // SD card write test
     sleep_for_seconds(5);
 #ifdef USE_IRIDIUM
     iridium_manager.attempt_transmit_wave_spectra();
@@ -151,6 +152,7 @@ void setup(){
     blink_LED_n_times(4, 1.0);
     Serial.println(F("initial wave spectrum acquisition..."));
     board_wave_analyzer.gather_and_analyze_wave_data();
+    board_sd_manager.write_test_file();  // SD card write test
     // IMU acquisition finished; safe to write SD (no current overlap)
     board_sd_manager.log_latest_wave_packet();
 #ifdef USE_IRIDIUM
@@ -327,6 +329,7 @@ void loop(){
 
   if (take_spectrum_measurement){
     board_wave_analyzer.gather_and_analyze_wave_data();
+    board_sd_manager.write_test_file();  // SD card write test
     wdt.restart();
     // IMU acquisition finished; write the spectrum to SD (no current overlap)
     board_sd_manager.log_latest_wave_packet();

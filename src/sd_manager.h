@@ -28,6 +28,7 @@ class SDManager{
     // Append the newest wave spectrum to WAVES.CSV
     // (columns: posix,spectrum_number,Hs,Tz,Tc,max_value, then nbr_wave_packet_freqs bins).
     void log_latest_wave_packet(void);
+    bool write_test_file(void);  // SD card write test
 
   private:
     bool ready {false};
