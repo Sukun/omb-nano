@@ -114,12 +114,14 @@ bool SDManager::write_test_file(void){
     Serial.println(F("SD: cannot open TEST.TXT"));
     return false;
   }
-  file.print(millis());
-  file.print(F(",SD test ok"));
-  file.println();
+  // 构造写入内容（同时输出到串口，方便终端直接看到）
+  String line = String(millis()) + F(",SD test ok");
+  file.println(line);
   file.flush();
   file.close();
-  Serial.println(F("SD: wrote TEST.TXT"));
+  // 把实际写入的内容打印到终端
+  Serial.print(F("SD: wrote TEST.TXT | content: "));
+  Serial.println(line);
   wdt.restart();
   return true;
 }

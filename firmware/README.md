@@ -18,84 +18,90 @@ pip install pyserial
 
 ## 文件清单
 
-| 文件 | 用途 | 推荐度 |
-|------|------|--------|
-| `flash_macos.sh` | 一键编译(Docker)+烧录脚本 | 推荐 |
-| `svl_flash_v2.py` | 改进版 SVL 烧录工具（容错+小帧） | 推荐 |
-| `svl_flash.py` | 原版 SVL 烧录工具（DTR 脉冲触发） | 备用 |
-| `hardware_test.py` | 硬件测试工具（替代 screen） | 推荐 |
-| `imu_listen.py` | IMU 串口监听（DTR 复位+1Mbps） | 推荐 |
-| `diagnose_bootloader.py` | bootloader 通信诊断 | 排障用 |
-| `artemis_svl_with_reset.py` | 带硬复位的 SVL 工具 | 排障用 |
-| `omb_nano_v0.2.0.bin` | 预编译固件 v0.2.0（出厂版） | 备用 |
-| `omb_nano_v0.1.0.bin` | 预编译固件 v0.1.0 | 历史版 |
+| 文件 | 用途 |
+|------|------|
+| `run_all_steps.sh` | 一键全流程：编译→烧录→IMU/SD 测试（**推荐**） |
+| `svl_flash_v2.py` | SVL 烧录工具（容错乱码+小帧+重试） |
+| `imu_listen.py` | IMU 串口监听（DTR 复位+1Mbps，自动检测串口） |
+| `hardware_test.py` | 硬件测试工具（替代 screen） |
+| `diagnose_bootloader.py` | bootloader 通信诊断（排障用） |
 
-## 推荐使用流程
+### 预编译固件（.bin）
 
-### 第 1 步：编译 + 烧录（一键）
+| 文件 | 大小 | 版本 | 说明 |
+|------|------|------|------|
+| `omb_nano_v0.1.0.bin` | 134496 B | v0.1.0 | **OMB 原版出厂固件**，未做任何修改，用于验证板子上电正常 |
+| `omb_nano_v0.2.0.bin` | 134536 B | v0.2.0 | 上游更新版本，未做任何修改，建议第一步烧录此版本验证硬件 |
+| `omb_nano_latest.bin` | 132648 B | latest | **我们的修改版**（TEST-MODE）：DEPLOYMENT_MODE=1、跳过 GNSS 循环、启用 IMU 调试块、新增 SD 卡 `write_test_file()` 写入测试。每次编译后自动覆盖 |
+
+> **烧录顺序建议**：先用 `v0.2.0.bin` 验证板子上电正常 → 再烧录 `omb_nano_latest.bin` 测试 IMU 和 SD 卡功能。
+
+## 快速开始
 
 ```bash
 cd ~/Downloads/omb-nano
-conda activate pcb
-bash firmware/flash_macos.sh
+bash firmware/run_all_steps.sh
 ```
 
-`flash_macos.sh` 会自动：Docker 编译 → 检测串口 → svl_flash.py 烧录。
-
-### 第 2 步：单独烧录（已有 .bin 文件）
+串口会自动检测。如果检测到多个，会提示选择。也可手动指定：
 
 ```bash
-conda activate pcb
-# 改进版（推荐，解决写 flash 时电源跌落复位问题）
-python3 firmware/svl_flash_v2.py /dev/cu.wchusbserial1410 \
-    -f src/build/tracker.ino.bin -b 115200 -v \
-    --frame-size 32 --frame-delay 0.1
+ls /dev/cu.wchusbserial14* # 查看串口编号
+bash firmware/run_all_steps.sh --port /dev/cu.wchusbserial1410
+```
 
-# 原版（如果改进版不工作）
-python3 firmware/svl_flash.py /dev/cu.wchusbserial1410 \
-    -f firmware/omb_nano_v0.2.0.bin -b 115200 -v
+跳过编译（已有 bin，只烧录+测试）：
+
+```bash
+bash firmware/run_all_steps.sh --skip-compile
+```
+
+跳过烧录（已烧录好，只看 IMU/SD 结果）：
+
+```bash
+bash firmware/run_all_steps.sh --skip-flash
+```
+
+## 手动分步操作
+
+### 1. 编译（Docker，输出到 firmware/omb_nano_latest.bin）
+
+```bash
+cd ~/Downloads/omb-nano
+/Applications/Docker.app/Contents/Resources/bin/docker run --rm \
+    -v "$(pwd):/tracker" "omb-nano:latest" \
+    bash -lc "mkdir -p /tmp/tracker && cp -r /tracker/src/* /tmp/tracker/ && \
+    cd /tmp/tracker && arduino-cli compile -e --output-dir /tracker/firmware \
+    --build-cache-path /tmp/build -b SparkFun:apollo3:artemis ."
+# arduino-cli 输出名为 tracker.ino.bin，重命名为 latest
+mv firmware/tracker.ino.bin firmware/omb_nano_latest.bin
+```
+
+### 2. 烧录（约 7 分钟）
+
+```bash
+/opt/anaconda3/envs/pcb/bin/python3 firmware/svl_flash_v2.py /dev/cu.wchusbserial1410 \
+    -f firmware/omb_nano_latest.bin -b 115200 -v --frame-size 32 --frame-delay 0.1
 ```
 
 > **注意**：烧录需要外部 3.3V 供电（AMS1117-3.3V 模块接到 U5 的 VOUT/GND 焊盘）+ USB-C 连接。
 
-### 第 3 步：硬件测试
+### 3. IMU + SD 卡数据采集（45 秒）
 
 ```bash
-conda activate pcb
-
-# 测试 1：启动日志验证（30 秒，检测 SD/IMU/GNSS 关键词）
-python3 firmware/hardware_test.py --test 1
-
-# 测试 2：SD 卡数据写入验证（60 秒）
-python3 firmware/hardware_test.py --test 2
-
-# 测试 3：IMU 数据验证（120 秒）
-python3 firmware/hardware_test.py --test 3
-
-# 纯串口监视器模式
-python3 firmware/hardware_test.py --monitor
-
-# 保存日志到文件
-python3 firmware/hardware_test.py --monitor --log session.log
+/opt/anaconda3/envs/pcb/bin/python3 firmware/imu_listen.py
 ```
 
-> **提示**：测试 1 需要在脚本运行期间断开再接上 3.3V 电源触发重启，才能捕获启动日志。
-
-### 第 4 步：IMU 数据采集
-
-```bash
-conda activate pcb
-# DTR 复位板子 + 1Mbps 监听 45 秒 + 自动保存到 imu_output.log
-python3 firmware/imu_listen.py
-```
+串口自动检测，也可手动指定：`python3 firmware/imu_listen.py /dev/cu.xxx`
 
 输出格式：`{时间ms} | nmeas {序号} | {acc_D}`，acc_D 为垂直加速度（m/s²），静止时约 9.81。
 
-### 第 5 步：排障
+日志保存到：`firmware/imu_output.log`
+
+### 4. 排障诊断
 
 ```bash
-# bootloader 通信诊断
-python3 firmware/diagnose_bootloader.py /dev/cu.wchusbserial1410
+/opt/anaconda3/envs/pcb/bin/python3 firmware/diagnose_bootloader.py /dev/cu.wchusbserial1410
 ```
 
 ## 常见问题
@@ -112,7 +118,7 @@ python3 firmware/diagnose_bootloader.py /dev/cu.wchusbserial1410
 
 ### 串口乱码（screen 命令）
 - 固件运行波特率 1,000,000 bps，screen 不稳定
-- 改用 `hardware_test.py --monitor` 或 `imu_listen.py`
+- 改用 `imu_listen.py` 或 `hardware_test.py --monitor`
 
 ### SD 卡未检测到
 - 检查 SD 卡是否为 FAT32 格式
