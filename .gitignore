@@ -11,3 +11,10 @@ temp.txt
 firmware/*.axf
 firmware/*.map
 firmware/tracker.ino.bin
+
+# Python analysis caches
+__pycache__/
+*.pyc
+
+# stray editor backups
+*.bak
