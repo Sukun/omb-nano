@@ -9,6 +9,7 @@ void print_wave_packet(const Wave_Packet &packet){
   Serial.print(F("Hs: ")); Serial.println(packet.Hs); delay(5);
   Serial.print(F("Tz: ")); Serial.println(packet.Tz); delay(5);
   Serial.print(F("Tc: ")); Serial.println(packet.Tc); delay(5);
+  Serial.print(F("Tp: ")); Serial.println(packet.Tp); delay(5);
   Serial.print(F("max_value: ")); Serial.println(packet.max_value); delay(5);
   Serial.println(F("start of spectrum content..."));
   Serial.println(F("entries are power (quadratic) spectral densities of accel down, estimated with Welch averaging"));
@@ -206,6 +207,7 @@ void WaveAnalyzer::perform_welch_analysis_imu_data(void){
   Serial.println(F("find welch spectrum max entry; welch spectrum content is:"));
 
   float welch_spectrum_max_entry = 0.0f;
+  int welch_spectrum_max_ind = 0;
   float sqrt_m0 = 0.0f;  // sqrt_mp should be equal to the standard deviation of the elevation value
   float sqrt_m2 = 0.0f;
   float sqrt_m4 = 0.0f;
@@ -226,6 +228,7 @@ void WaveAnalyzer::perform_welch_analysis_imu_data(void){
 
     if (working_welch_spectrum[crrt_welch_ind] > welch_spectrum_max_entry){
       welch_spectrum_max_entry = working_welch_spectrum[crrt_welch_ind];
+      welch_spectrum_max_ind = crrt_welch_ind;
     }
 
     // and maybe do a bit of print...
@@ -245,17 +248,24 @@ void WaveAnalyzer::perform_welch_analysis_imu_data(void){
   sqrt_m2 = sqrt(sqrt_m2);
   sqrt_m4 = sqrt(sqrt_m4);
 
-  float tz = sqrt_m2 / sqrt_m0;
-  float tc = sqrt_m4 / sqrt_m2;
+  // Tz = sqrt(m0/m2) (mean zero-crossing period, Tm02), Tc = sqrt(m2/m4) (mean crest period, Tm24);
+  // see docs/2.问题与结论.md 问题1 for the dimensional-analysis justification
+  // (the previous sqrt(m2/m0), sqrt(m4/m2) had units of Hz, not seconds).
+  float tz = sqrt_m0 / sqrt_m2;
+  float tc = sqrt_m2 / sqrt_m4;
+  // peak period, from the frequency bin of the accel-spectrum maximum found above
+  float tp = 1.0f / ((welch_spectrum_max_ind + welch_bin_min) * welch_frequency_resolution);
 
   working_wave_packet.Hs = Hs;
   Serial.print(F("Hs ")); Serial.println(Hs);
 
   working_wave_packet.Tz = tz;
   working_wave_packet.Tc = tc;
+  working_wave_packet.Tp = tp;
 
   Serial.print(F("Tz ")); Serial.println(tz, 4);
   Serial.print(F("Tc ")); Serial.println(tc, 4);
+  Serial.print(F("Tp ")); Serial.println(tp, 4);
 
   // write the max value and the discretized spectrum
   Serial.println(F("fill wave packet with output data"));
@@ -316,6 +326,7 @@ void WaveAnalyzer::clear_working_wave_packet(void){
   working_wave_packet.posix_timestamp = 0;
   working_wave_packet.spectrum_number = 0;
   working_wave_packet.Hs = -1.0f;
+  working_wave_packet.Tp = -1.0f;
   working_wave_packet.max_value = -1.0f;
   for (int i=0; i<nbr_wave_packet_freqs; i++){
     working_wave_packet.array_pwelch[i] = 0;  // FIX: was indexing with the constant nbr_wave_packet_freqs (out-of-bounds write + array not cleared)

@@ -85,12 +85,13 @@ void SDManager::log_latest_wave_packet(void){
     return;
   }
 
-  // posix, spectrum_number, Hs, Tz, Tc, max_value, then the discretised Welch bins
+  // posix, spectrum_number, Hs, Tz, Tc, Tp, max_value, then the discretised Welch bins
   file.print(crrt.posix_timestamp);  file.print(',');
   file.print(crrt.spectrum_number);  file.print(',');
   file.print(crrt.Hs, 4);            file.print(',');
   file.print(crrt.Tz, 4);            file.print(',');
   file.print(crrt.Tc, 4);            file.print(',');
+  file.print(crrt.Tp, 4);            file.print(',');
   file.print(crrt.max_value, 6);
   for (size_t i = 0; i < nbr_wave_packet_freqs; i++){
     file.print(',');

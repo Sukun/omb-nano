@@ -47,6 +47,7 @@ struct Wave_Packet{
     float Hs;
     float Tz;
     float Tc;
+    float Tp;
     float max_value;
     uint16_t array_pwelch[welch_bin_max - welch_bin_min];
 };
