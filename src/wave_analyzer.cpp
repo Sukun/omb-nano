@@ -160,6 +160,40 @@ void WaveAnalyzer::perform_welch_analysis_imu_data(void){
       fft_input[crrt_fft_input_index] = board_data_manager.get_entry(crrt_fft_input_index + start_current_segment).accel_down - 9.81f;
     }
 
+    // problem 3 (issue audit): lightweight per-segment despiking -- clamp any
+    // sample beyond +-despike_k_sigma standard deviations of this segment's own
+    // mean/std to that boundary, before windowing. O(N), no extra buffers.
+    // A lone large spike would otherwise leak broadband energy across the whole
+    // retained spectrum via the FFT.
+    if (use_despike){
+      float segment_mean = 0.0f;
+      for (int crrt_fft_input_index=0; crrt_fft_input_index<fft_length; crrt_fft_input_index++){
+        segment_mean += fft_input[crrt_fft_input_index];
+      }
+      segment_mean /= static_cast<float>(fft_length);
+
+      float segment_var = 0.0f;
+      for (int crrt_fft_input_index=0; crrt_fft_input_index<fft_length; crrt_fft_input_index++){
+        float diff = fft_input[crrt_fft_input_index] - segment_mean;
+        segment_var += diff * diff;
+      }
+      segment_var /= static_cast<float>(fft_length);
+      float segment_std = sqrt(segment_var);
+
+      if (segment_std > 0.0f){
+        float lower_bound = segment_mean - despike_k_sigma * segment_std;
+        float upper_bound = segment_mean + despike_k_sigma * segment_std;
+        for (int crrt_fft_input_index=0; crrt_fft_input_index<fft_length; crrt_fft_input_index++){
+          if (fft_input[crrt_fft_input_index] < lower_bound){
+            fft_input[crrt_fft_input_index] = lower_bound;
+          }
+          else if (fft_input[crrt_fft_input_index] > upper_bound){
+            fft_input[crrt_fft_input_index] = upper_bound;
+          }
+        }
+      }
+    }
+
     // apply windowing
     if (use_hanning_window){
       Serial.println(F("apply hanning window"));

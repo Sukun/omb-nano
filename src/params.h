@@ -168,8 +168,27 @@ constexpr size_t number_welch_segments {21};
 constexpr float welch_frequency_resolution {10.0f / static_cast<float>(fft_length)};
 
 constexpr size_t welch_bin_min {9};
-constexpr size_t welch_bin_max {64};
+// problem 8 (wave_spectrum_methodology_issues audit): extended from 64 to 103 so the
+// retained band covers down to ~2.0s period (bin 102 = 102*welch_frequency_resolution
+// ~= 0.498 Hz), instead of only 3.25s -- simulation showed the previous 3.25s cutoff
+// silently under-estimates Hs by up to ~27% of the true energy in short-period wind-sea
+// conditions. This is the ONLY constant that needs to change: nbr_wave_packet_freqs,
+// Wave_Packet::array_pwelch[], working_welch_spectrum[], and every loop bound in
+// wave_analyzer.cpp / sd_manager.cpp all derive from welch_bin_max automatically.
+// Consequence: array_pwelch grows from 55 to 94 uint16 entries (+78 bytes/packet,
+// still well within iridium_tx_buffer_size=340), and WAVES.CSV gains 39 more spectrum
+// columns. See docs/2.问题与结论.md 问题8.
+constexpr size_t welch_bin_max {103};
 constexpr size_t nbr_wave_packet_freqs = welch_bin_max - welch_bin_min;
+
+// problem 3 (wave_spectrum_methodology_issues audit): lightweight per-segment
+// despiking, applied to fft_input right after gravity subtraction and before
+// windowing (see perform_welch_analysis_imu_data). Simulation showed this is only
+// material for many (>=10) large (>=10 sigma) spikes in one segment; the fixed
+// firmware clamps such outliers to +-despike_k_sigma*std instead of leaving them
+// to leak broadband energy across the whole retained spectrum.
+constexpr bool use_despike {true};
+constexpr float despike_k_sigma {10.0f};
 
 constexpr size_t size_wave_packet_buffer {128};
 
