@@ -72,6 +72,26 @@ class Serial:
         self.assertEqual(csvs[0].read_text(), ROW)
         self.assertIn(csvs[0].name, (self.root / 'record.md').read_text())
 
+    def test_default_experiment_path_is_at_hardware_repository_root(self):
+        # A normal invocation must follow the moved records without an env override.
+        repo = self.root / 'omb-nano'
+        (repo / 'firmware').mkdir(parents=True)
+        (repo / 'src').mkdir()
+        script = repo / 'firmware/run_experiment.sh'
+        script.write_text(LISTENER.with_name('run_experiment.sh').read_text())
+        (repo / 'src/params.h').write_text('constexpr bool use_dummy_imu_data = false;')
+        experiment = self.root / 'omb-nano-extend/experiments/test-demo'
+        experiment.mkdir(parents=True)
+        (experiment / 'record.md').write_text('# planned test\n')
+        env = dict(self.env, OMB_PYTHON=sys.executable)
+        env.pop('OMB_EXPERIMENT_DIR', None)
+        result = subprocess.run(['bash', str(script), '--experiment', 'test-demo',
+                                 '--check', '--no-open'], env=env,
+                                capture_output=True, text=True, timeout=5)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn(str(experiment / 'record.md'), result.stdout)
+        self.assertFalse((self.root / 'omb-nano-extend/docs').exists())
+
     def test_empty_files_fail(self):
         a = self.root / 'empty.csv'; a.write_text('')
         self.assertEqual(subprocess.run([sys.executable, str(LISTENER), '--compare', str(a), str(a)],

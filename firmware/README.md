@@ -1,5 +1,7 @@
 # OMB-Nano 固件工具链
 
+当前test1—test3请按[三项实测指南](../../omb-nano-extend/experiments/01_Test_Guide.md)：明确烧录omb_nano_imu_capture.bin，再运行run_experiment.sh。实验输出在omb-nano-extend根目录experiments/；下方latest与run_all_steps.sh保留为历史上电调试工具，不作为本轮默认入口。
+
 本目录包含 OMB-Nano 极地浮标 PCB 板的编译、烧录、测试工具。
 
 ## 环境要求
@@ -20,7 +22,7 @@ pip install pyserial
 
 | 文件 | 用途 |
 |------|------|
-| `run_all_steps.sh` | 一键全流程：编译→烧录→IMU/SD 测试（**推荐**） |
+| `run_all_steps.sh` | 一键全流程：编译→烧录→IMU/SD 测试（历史流程） |
 | `svl_flash_v2.py` | SVL 烧录工具（容错乱码+小帧+重试） |
 | `imu_listen.py` | IMU 串口监听（DTR 复位+1Mbps，自动检测串口） |
 | `hardware_test.py` | 硬件测试工具（替代 screen） |
@@ -38,9 +40,9 @@ pip install pyserial
 
 ## 实验1：桌面复查
 
-运行 `bash firmware/run_experiment.sh --experiment test1_2026-11-14_land-static --source real`：检查环境、打开实验记录、按Enter默认监听90秒，收到完成标记后提前结束、保存并打开日志。说明和输出均放在 [实验1文件夹](../../omb-nano-extend/docs/experiments/test1_2026-11-14_land-static/record.md)。仅检查环境加 `--check`。脚本不编译或烧录，板上配置以启动输出为准。
+运行 `bash firmware/run_experiment.sh --experiment test1_2026-11-14_land-static --source real`：检查环境、打开实验记录、按Enter默认监听90秒，收到完成标记后提前结束、保存并打开日志。说明和输出均放在 [实验1文件夹](../../omb-nano-extend/experiments/test1_2026-11-14_land-static/record.md)。仅检查环境加 `--check`。脚本不编译或烧录，板上配置以启动输出为准。
 
-## 快速开始
+## 历史上电调试入口
 
 ```bash
 cd ~/Documents/omb-nano
@@ -88,7 +90,7 @@ mv firmware/tracker.ino.bin firmware/omb_nano_latest.bin
     -f firmware/omb_nano_latest.bin -b 115200 -v --frame-size 32 --frame-delay 0.1
 ```
 
-> **当前原型机**：U5未装，用户确认稳定3.3V经飞线接VOUT/VCC、GND；USB为CH340供电通信。电源转换器型号待登记，不能假定为AMS1117。见 [实物配置](../../omb-nano-extend/docs/prototype-status.md)。
+> **当前原型机**：U5未装，用户确认稳定3.3V经飞线接VOUT/VCC、GND；USB为CH340供电通信。电源转换器型号待登记，不能假定为AMS1117。见 [实物配置](../../omb-nano-extend/buoy_build/prototype-status.md)。
 
 ### 3. IMU + SD 卡数据采集（默认60秒）
 
@@ -102,7 +104,7 @@ mv firmware/tracker.ino.bin firmware/omb_nano_latest.bin
 
 旧监听器日志保存到：`firmware/imu_output.log`，每次覆盖。自动选择多个候选串口中的第一个，故多设备时必须手动指定。
 
-2026-11-14：本次及后续实验说明和运行证据归 [自有项目测试区](../../omb-nano-extend/docs/experiments/test1_2026-11-14_land-static/record.md)。`run_experiment.sh` 已支持将采集日志直接保存到实验文件夹。
+2026-11-14：本次及后续实验说明和运行证据归 [自有项目测试区](../../omb-nano-extend/experiments/test1_2026-11-14_land-static/record.md)。`run_experiment.sh` 已支持将采集日志直接保存到实验文件夹。
 
 ### 4. 排障诊断
 
@@ -143,7 +145,7 @@ mv firmware/tracker.ino.bin firmware/omb_nano_latest.bin
 
 ## 验证采集数据
 
-新固件每次启动采600个10Hz真实IMU样本，不算波谱，采完停留。`imu_listen.py`输出诊断.log与同名数字.csv；SD在采集结束后生成IMU0000.CSV等文件。字段和操作见 [test1记录](../../omb-nano-extend/docs/experiments/test1_2026-11-14_land-static/record.md)。
+新固件每次启动采600个10Hz真实IMU样本，不算波谱，采完停留。`imu_listen.py`输出诊断.log与同名数字.csv；SD在采集结束后生成IMU0000.CSV等文件。字段和操作见 [test1记录](../../omb-nano-extend/experiments/test1_2026-11-14_land-static/record.md)。
 
 逐行比较：`python3 firmware/imu_listen.py --compare computer.csv IMU0000.CSV`。
 

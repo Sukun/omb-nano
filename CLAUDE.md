@@ -2,15 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 当前项目配置（2026-11-14）
+## 当前项目配置（2026-11-15）
 
-当前实物配置以 `../omb-nano-extend/docs/prototype-status.md` 为准。U5未装，稳定3.3V经飞线注入VOUT/VCC、GND；USB为CH340供电通信。程序留在本仓库，新实验说明和运行记录归 `../omb-nano-extend/docs/experiments/`。历史改型资料暂不迁移。
+当前实物配置以 `../omb-nano-extend/buoy_build/prototype-status.md` 为准。U5未装，稳定3.3V经飞线注入VOUT/VCC、GND；USB为CH340供电通信。程序留在本仓库，新实验说明和运行记录归 `../omb-nano-extend/experiments/`。历史改型资料暂不迁移。
 
 ## 本仓库是什么
 
 本仓库是 **OMB-Nano 极地浮标的固件源码**——基于 Arduino/C++、运行在 Apollo3 Blue（SparkFun Artemis 模块）上，通过 `arduino-cli` 编译。仓库是上游 [gauteh/omb-nano](https://github.com/gauteh/omb-nano) 的一个 fork（origin 为 `github.com/Sukun/omb-nano`），是整个两仓库工作区中**真正可编译、可烧录的代码**——姊妹仓库 `../omb-nano-extend` 不含任何源代码。
 
-当前测试模式：`imu_capture_only=true`、`imu_capture_samples=600`、`use_dummy_imu_data=false`。每次启动采约60秒真实IMU，串口与SD同样的9列CSV，采完停留，不运行部署循环或波谱。具体格式见 `../omb-nano-extend/docs/experiments/test1_2026-11-14_land-static/record.md`。
+当前测试模式：`imu_capture_only=true`、`imu_capture_samples=600`、`use_dummy_imu_data=false`。每次启动采约60秒真实IMU，串口与SD同样的9列CSV，采完停留，不运行部署循环或波谱。具体格式见 `../omb-nano-extend/experiments/test1_2026-11-14_land-static/record.md`。
 
 主机验证：`python3 -m unittest discover -s tests -p 'test_imu_capture.py' -v`，不连接设备。`tests/good-output*.txt`仍为更早的上游参考输出。编译仍用Docker；实际IMU与SD时序需真机复查。
 
@@ -28,7 +28,7 @@ docker run --rm -v "$(pwd)/src:/tracker" omb-nano \
 
 产物：`src/build/tracker.ino.bin`。根目录 `Makefile` 的 `bin:` target 封装了同一条 `arduino-cli compile` 命令（需在容器内、`src/` 目录下执行）。
 
-推荐的一键流程是 `firmware/run_all_steps.sh`（编译→烧录→IMU/SD 测试一条龙，支持 `--skip-compile`/`--skip-flash`/`--port`），具体参数见 `firmware/README.md`，此处不重复。
+当前三项实测先明确烧录 `firmware/omb_nano_imu_capture.bin`，之后用 `firmware/run_experiment.sh`。操作指南在 `../omb-nano-extend/experiments/01_Test_Guide.md`；`run_all_steps.sh`默认使用latest，保留为历史上电工具。
 
 ### 烧录
 
@@ -110,12 +110,12 @@ python3 firmware/svl_flash_v2.py /dev/cu.wchusbserialXXXX -f firmware/omb_nano_l
 - **Dockerfile 与 CI/Makefile 用的板索引 URL 不同**（前者 `gauteh/omb-2024-nano`，后者官方 SparkFun），复现构建路径时注意区分，不要互相替换。
 - **`#ifdef USE_IRIDIUM` 方向不要写反**——是 `#ifdef`（宏未定义则剔除调用），不是 `#ifndef`。
 - **根目录 `Makefile` 的 `docker-run` target 会执行 `cp Makefile src/`**，产生的 `src/Makefile` 已在 `.gitignore` 中（`/src/Makefile`），这是预期行为，看到这个文件不需要处理。
-- 测试时**先烧未修改的上游预编译 `.bin`（v0.1.0/v0.2.0）确认硬件正常，再测试本地修改版** `omb_nano_latest.bin`。
+- 上游固件的基础上电验证已有历史记录；本轮test1—test3使用采集版bin，不重复原先的上游→latest烧录顺序。
 
 ## 与 buoy 仓库的关系
 
 PCB 硬件设计、BOM、组装说明、原理图级别的引脚/网络参考都在姊妹仓库 **`../omb-nano-extend`**（同一工作区，经 `buoy.code-workspace` 关联）。本仓库（`omb-nano`）不含任何硬件设计文件，只有固件。
 
-- 涉及**哪些元件 DNP/已贴片、BOM 选型来源、外壳是否匹配、某个具体引脚在原理图上接到哪个网络**的问题 —— 去 `buoy` 仓库，具体看 `omb-nano-extend/.github/agents/pcb-hardware-expert.agent.md`（引脚级别的权威参考）和 `omb-nano-extend/docs/2.pcb-procurement-and-assembly-guide.md`（组装/DNP 权威文档）。
+- 涉及**哪些元件 DNP/已贴片、BOM 选型来源、外壳是否匹配、某个具体引脚在原理图上接到哪个网络**的问题 —— 去 `buoy` 仓库，具体看 `omb-nano-extend/.github/agents/pcb-hardware-expert.agent.md`（引脚级别的权威参考）和 `omb-nano-extend/buoy_build/2.pcb-procurement-and-assembly-guide.md`（组装/DNP 权威文档）。
 - 涉及**固件逻辑、编译/烧录机制、代码里的引脚映射**的问题 —— 留在本仓库。
-- 提示：`omb-nano-extend/docs/buoy_notes.md`（研究日志）和 `omb-nano-extend/todo.md`（2026-06-25 的下一步计划，其内容大部分已在本仓库执行完成，见上方「已完成的工作」）都记录了本仓库里发生的工作，可作为叙事性的交叉印证，但本仓库自己的 `git log` 和 `docs/固件变更记录.md` 才是关于"这里到底做过什么"的权威记录。
+- 提示：`omb-nano-extend/buoy_build/buoy_notes.md`（研究日志）和 `omb-nano-extend/todo.md`（2026-06-25 的下一步计划，其内容大部分已在本仓库执行完成，见上方「已完成的工作」）都记录了本仓库里发生的工作，可作为叙事性的交叉印证，但本仓库自己的 `git log` 和 `docs/固件变更记录.md` 才是关于"这里到底做过什么"的权威记录。

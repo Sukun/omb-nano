@@ -23,7 +23,7 @@ while [[ $# -gt 0 ]]; do
 done
 [[ -n "$experiment_name" && "$experiment_name" != */* && "$experiment_name" != .* ]] || { echo '请用--experiment指定实验文件夹，例如test1_2026-11-14_land-static'; exit 1; }
 case "$expected_source" in real|synthetic|any) ;; *) echo '--source应为real、synthetic或any'; exit 1 ;; esac
-experiment_dir="${OMB_EXPERIMENT_DIR:-$(dirname "$repo_dir")/omb-nano-extend/docs/experiments/$experiment_name}"
+experiment_dir="${OMB_EXPERIMENT_DIR:-$(dirname "$repo_dir")/omb-nano-extend/experiments/$experiment_name}"
 [[ "$seconds" =~ ^[1-9][0-9]*$ ]] || { echo '监听秒数需为正整数'; exit 1; }
 [[ -f "$experiment_dir/record.md" ]] || { echo "找不到实验记录：$experiment_dir/record.md"; exit 1; }
 
