@@ -4,6 +4,8 @@
 
 本目录包含 OMB-Nano 极地浮标 PCB 板的编译、烧录、测试工具。
 
+后续固件改进待办见 [项目TODO](../../omb-nano-extend/todo.md#当前固件待办)，包括通过USB串口读取并导出SD文件。
+
 ## 环境要求
 
 ```bash
