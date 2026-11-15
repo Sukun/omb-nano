@@ -24,6 +24,10 @@ constexpr int i2c_port_number {0}; // for IMU
 // TODO: test on a small snippet first...
 #define DEPLOYMENT_MODE 1
 
+// Early land/water validation: one real-IMU run per boot, no wave analysis.
+constexpr bool imu_capture_only {true};
+constexpr size_t imu_capture_samples {600};  // 60 s at the existing 10 Hz output
+
 //--------------------------------------------------------------------------------
 // GNSS params
 
@@ -204,7 +208,9 @@ constexpr long interval_between_wave_spectra_measurements {2 * 60 * 60};
 constexpr long tolerance_seconds_start_wave_measurements {10 * 60};
 
 // to test the welch processing code, we have the possibility ot use dummy IMU data:
+static_assert(!imu_capture_only || imu_capture_samples > 0, "capture needs samples");
 constexpr bool use_dummy_imu_data {false};  // if true, use dummy IMU data
+static_assert(!imu_capture_only || !use_dummy_imu_data, "capture mode requires real IMU");
 // the properties of the dummy signal that we generate; its form is "dummy_accel = amp * cos(frq * t) + DC"
 // where amp = amp_eta * omega**2 with amp_eta the water elevation amplitude
 constexpr float dummy_imu_elevation_amplitude = 1.0f;  // amp_eta, in meters

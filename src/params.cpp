@@ -1,7 +1,7 @@
 #include "params.h"
 
 void print_params(void){
-    Serial.print(F("version : ")); Serial.print(ON_VERSION);
+    Serial.print(F("version : ")); Serial.println(ON_VERSION);
     Serial.print(F("baudrate_debug_serial : ")); Serial.println(baudrate_debug_serial );
     Serial.print(F("i2c_port_number: ")); Serial.println(i2c_port_number );
 
@@ -11,6 +11,8 @@ void print_params(void){
     delay(50);
 
     Serial.println(F("----- IMU_DATA_GATHERING_MODE -----"));
+    Serial.print(F("imu_capture_only: ")); Serial.println(imu_capture_only);
+    Serial.print(F("imu_capture_samples: ")); Serial.println(imu_capture_samples);
     Serial.print(F("use_dummy_imu_data: ")); Serial.println(use_dummy_imu_data);
     Serial.println(F("IF use_dummy_imu_data is TRUE, then use synthetic dummy signal (harmonic signal); if FALSE, then use true signal"));
     Serial.print(F("dummy_imu_elevation_amplitude: ")); Serial.println(dummy_imu_elevation_amplitude, 4);

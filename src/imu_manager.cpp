@@ -505,3 +505,9 @@ bool IMU_Manager::get_new_reading(float & acc_N_inout, float & acc_E_inout, floa
 
    return true;
 }
+
+void IMU_Manager::get_raw_axes(float &ax, float &ay, float &az,
+                               float &gx, float &gy, float &gz) const {
+    ax = accel.acceleration.x; ay = accel.acceleration.y; az = accel.acceleration.z;
+    gx = gyro.gyro.x; gy = gyro.gyro.y; gz = gyro.gyro.z;
+}

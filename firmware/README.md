@@ -11,7 +11,7 @@ conda activate pcb
 pip install pyserial
 
 # 2. Docker Desktop（用于编译固件，镜像名 omb-nano:latest）
-#    Dockerfile 在项目根目录 ~/Downloads/omb-nano/Dockerfile
+#    Dockerfile 在项目根目录 ~/Documents/omb-nano/Dockerfile
 
 # 3. CH340 USB 驱动（macOS 自带，板子通过 USB-C 连接）
 ```
@@ -36,10 +36,14 @@ pip install pyserial
 
 > **烧录顺序建议**：先用 `v0.2.0.bin` 验证板子上电正常 → 再烧录 `omb_nano_latest.bin` 测试 IMU 和 SD 卡功能。
 
+## 实验1：桌面复查
+
+运行 `bash firmware/run_experiment.sh --experiment test1_2026-11-14_land-static --source real`：检查环境、打开实验记录、按Enter默认监听90秒，收到完成标记后提前结束、保存并打开日志。说明和输出均放在 [实验1文件夹](../../omb-nano-extend/docs/experiments/test1_2026-11-14_land-static/record.md)。仅检查环境加 `--check`。脚本不编译或烧录，板上配置以启动输出为准。
+
 ## 快速开始
 
 ```bash
-cd ~/Downloads/omb-nano
+cd ~/Documents/omb-nano
 bash firmware/run_all_steps.sh
 ```
 
@@ -67,7 +71,7 @@ bash firmware/run_all_steps.sh --skip-flash
 ### 1. 编译（Docker，输出到 firmware/omb_nano_latest.bin）
 
 ```bash
-cd ~/Downloads/omb-nano
+cd ~/Documents/omb-nano
 /Applications/Docker.app/Contents/Resources/bin/docker run --rm \
     -v "$(pwd):/tracker" "omb-nano:latest" \
     bash -lc "mkdir -p /tmp/tracker && cp -r /tracker/src/* /tmp/tracker/ && \
@@ -84,9 +88,9 @@ mv firmware/tracker.ino.bin firmware/omb_nano_latest.bin
     -f firmware/omb_nano_latest.bin -b 115200 -v --frame-size 32 --frame-delay 0.1
 ```
 
-> **注意**：烧录需要外部 3.3V 供电（AMS1117-3.3V 模块接到 U5 的 VOUT/GND 焊盘）+ USB-C 连接。
+> **当前原型机**：U5未装，用户确认稳定3.3V经飞线接VOUT/VCC、GND；USB为CH340供电通信。电源转换器型号待登记，不能假定为AMS1117。见 [实物配置](../../omb-nano-extend/docs/prototype-status.md)。
 
-### 3. IMU + SD 卡数据采集（45 秒）
+### 3. IMU + SD 卡数据采集（默认60秒）
 
 ```bash
 /opt/anaconda3/envs/pcb/bin/python3 firmware/imu_listen.py
@@ -96,7 +100,9 @@ mv firmware/tracker.ino.bin firmware/omb_nano_latest.bin
 
 输出格式：`{时间ms} | nmeas {序号} | {acc_D}`，acc_D 为垂直加速度（m/s²），静止时约 9.81。
 
-日志保存到：`firmware/imu_output.log`
+旧监听器日志保存到：`firmware/imu_output.log`，每次覆盖。自动选择多个候选串口中的第一个，故多设备时必须手动指定。
+
+2026-11-14：本次及后续实验说明和运行证据归 [自有项目测试区](../../omb-nano-extend/docs/experiments/test1_2026-11-14_land-static/record.md)。`run_experiment.sh` 已支持将采集日志直接保存到实验文件夹。
 
 ### 4. 排障诊断
 
@@ -134,3 +140,11 @@ mv firmware/tracker.ino.bin firmware/omb_nano_latest.bin
 | DEPLOYMENT_MODE | 1（测试） | `params.h`，100 样本约 10 秒 |
 | IMU 采样率 | 10 Hz | 199 样本约 20 秒 |
 | SD 卡文件系统 | FAT32 | SdFat 库，软件 SPI |
+
+## 验证采集数据
+
+新固件每次启动采600个10Hz真实IMU样本，不算波谱，采完停留。`imu_listen.py`输出诊断.log与同名数字.csv；SD在采集结束后生成IMU0000.CSV等文件。字段和操作见 [test1记录](../../omb-nano-extend/docs/experiments/test1_2026-11-14_land-static/record.md)。
+
+逐行比较：`python3 firmware/imu_listen.py --compare computer.csv IMU0000.CSV`。
+
+当前采集固件：`firmware/omb_nano_imu_capture.bin`，95936字节；Docker amd64编译通过，尚未烧录。不要用旧的latest文件代替本次采集固件。Apple Silicon构建镜像时使用 `docker build --platform linux/amd64 -t omb-nano:latest .`。

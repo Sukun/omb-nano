@@ -12,6 +12,7 @@
 #include "wave_analyzer.h"
 #include "thermistors_manager.h"
 #include "sd_manager.h"
+#include "imu_capture.h"
 
 // TODO: board_imu_manger -> board_imu_manager
 
@@ -39,6 +40,11 @@ void setup(){
 
   // offer a print of the params used for the setup of the instrument
   print_params();
+
+  if (imu_capture_only) {
+    capture_real_imu();
+    return;
+  }
 
   // greet the user
   blink_LED_n_times(10, 5.0);
@@ -169,6 +175,11 @@ void setup(){
 }
 
 void loop(){
+  if (imu_capture_only) {
+    wdt.restart();
+    delay(100);
+    return;
+  }
   //--------------------------------------------------------------------------------
   // go to sleep until next measurement
 

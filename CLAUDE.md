@@ -2,11 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 当前项目配置（2026-11-14）
+
+当前实物配置以 `../omb-nano-extend/docs/prototype-status.md` 为准。U5未装，稳定3.3V经飞线注入VOUT/VCC、GND；USB为CH340供电通信。程序留在本仓库，新实验说明和运行记录归 `../omb-nano-extend/docs/experiments/`。历史改型资料暂不迁移。
+
 ## 本仓库是什么
 
-本仓库是 **OMB-Nano 极地浮标的固件源码**——基于 Arduino/C++、运行在 Apollo3 Blue（SparkFun Artemis 模块）上，通过 `arduino-cli` 编译。仓库是上游 [gauteh/omb-nano](https://github.com/gauteh/omb-nano) 的一个 fork（origin 为 `github.com/Sukun/omb-nano`），是整个两仓库工作区中**真正可编译、可烧录的代码**——姊妹仓库 `../buoy` 不含任何源代码。
+本仓库是 **OMB-Nano 极地浮标的固件源码**——基于 Arduino/C++、运行在 Apollo3 Blue（SparkFun Artemis 模块）上，通过 `arduino-cli` 编译。仓库是上游 [gauteh/omb-nano](https://github.com/gauteh/omb-nano) 的一个 fork（origin 为 `github.com/Sukun/omb-nano`），是整个两仓库工作区中**真正可编译、可烧录的代码**——姊妹仓库 `../omb-nano-extend` 不含任何源代码。
 
-**没有自动化测试**：`tests/` 目录只有两份串口输出抓包文本（`good-output.txt`、`good-output2.txt`），是供人工比对的参考输出，**不是可执行的测试用例**，不要凭空发明 `make test` 之类的命令。也没有 lint 配置。本仓库的命令面只有「编译」「烧录」「监视串口」三类，见下节。
+当前测试模式：`imu_capture_only=true`、`imu_capture_samples=600`、`use_dummy_imu_data=false`。每次启动采约60秒真实IMU，串口与SD同样的9列CSV，采完停留，不运行部署循环或波谱。具体格式见 `../omb-nano-extend/docs/experiments/test1_2026-11-14_land-static/record.md`。
+
+主机验证：`python3 -m unittest discover -s tests -p 'test_imu_capture.py' -v`，不连接设备。`tests/good-output*.txt`仍为更早的上游参考输出。编译仍用Docker；实际IMU与SD时序需真机复查。
 
 ## 命令
 
@@ -36,7 +42,7 @@ pip install pyserial
 python3 firmware/svl_flash_v2.py /dev/cu.wchusbserialXXXX -f firmware/omb_nano_latest.bin -b 115200 -v
 ```
 
-烧录前提：USB-C 接电脑（CH340 供电+通信）；若 U5（S7V8F3）尚未焊接，需额外把外部 3.3V（如 AMS1117-3.3 模块）注入 U5 的 VOUT/GND 焊盘；**不要同时接电池**。
+烧录前提：USB-C 接电脑（CH340 供电+通信）；若 U5（S7V8F3）尚未焊接，需额外把外部 3.3V（如 AMS1117-3.3 模块）注入 U5 的 VOUT/GND 焊盘；当前原型机的稳定3.3V注入方式见上述配置文件，不按电源名称判断接线。
 
 **建议先烧 `firmware/omb_nano_v0.1.0.bin` 或 `omb_nano_v0.2.0.bin`（未经修改的上游固件）验证硬件本身正常，再测试本地修改过的 `omb_nano_latest.bin`。**
 
@@ -48,7 +54,7 @@ python3 firmware/svl_flash_v2.py /dev/cu.wchusbserialXXXX -f firmware/omb_nano_l
 
 `.github/workflows/build.yml` 在 push/PR 到 `main` 时触发，**不使用 Dockerfile**，而是在 `ubuntu-latest` runner 上原生安装依赖，且使用的是**官方 SparkFun 板索引 URL**（与 Dockerfile 用的 URL 不同，见下方「工程细节坑点」）。CI 编译前会把 `tracker.ino` 改名为 `src.ino`（因为 checkout 目录名不是 `tracker`），本地 Docker 编译时挂载点已正确命名，不需要这步。
 
-**以上是本仓库全部的命令面——没有测试命令，没有 lint 命令，不要臆造。**
+统一实验入口为 `firmware/run_experiment.sh --experiment <目录名> --source real`，输出在自有项目实验目录；主机检查命令见上文。
 
 ## 架构与代码结构
 
@@ -87,7 +93,7 @@ python3 firmware/svl_flash_v2.py /dev/cu.wchusbserialXXXX -f firmware/omb_nano_l
 
 以下提交已完成并推送到 `main`，如有疑问以 `git log --oneline` 为准，不要轻信某一份文档的快照描述：
 
-- **`b7d81fe`（Phase 0，修复既有 bug，恢复可编译基线）**：上游 `src/` 原样克隆后**根本编译不过**——`params.cpp:4` 有一处未闭合括号的语法错误（`firmware/` 下的预编译 `.bin` 早于这次修复）。同时修复了 `wave_analyzer.cpp` 的 `clear_working_wave_packet()` 中一处数组越界写（用常量下标而非循环变量 `i`），以及 3 处较小问题（`gnss_manager.cpp` 的死代码、`time_manger.cpp` 的误导性注释、`DEPLOYMENT_MODE==2` 缺字段的编译保护）。两处刻意未动的"疑似问题"：Tz/Tc 是否反向（上游自己标注的 TODO，不擅自改）、`float_mean_filter` 在极端超时下的除零（上游既有行为）。
+- **`b7d81fe`（Phase 0，修复既有 bug，恢复可编译基线）**：上游 `src/` 原样克隆后**根本编译不过**——`params.cpp:4` 有一处未闭合括号的语法错误（`firmware/` 下的预编译 `.bin` 早于这次修复）。同时修复了 `wave_analyzer.cpp` 的 `clear_working_wave_packet()` 中一处数组越界写（用常量下标而非循环变量 `i`），以及 3 处较小问题（`gnss_manager.cpp` 的死代码、`time_manger.cpp` 的误导性注释、`DEPLOYMENT_MODE==2` 缺字段的编译保护）。两处刻意未动的"疑似问题"：Tz/Tc 是否反向（当时未改；后续b5b700c已修复并新增Tp）、`float_mean_filter` 在极端超时下的除零（上游既有行为）。
 - **`a0cde26`（Phase 1，去铱星）**：用上述 `#ifdef USE_IRIDIUM` 方式从调用路径中移除铱星，二进制体积减小约 11.7KB（未引用代码被 linker 剔除）。
 - **`409e04b`（Phase 2，新增 SD 卡记录）**：新增 `sd_manager.cpp/.h` + Dockerfile 的 SdFat 补丁，二进制增大约 7.5KB。
 - **`347ec25`、`6e60f92`、`288d8e0`（2026-06-26/27，超出文档记录的 3 个 Phase 之外的上电调试提交）**：在 `tracker.ino`/`params.h` 中直接加入无天线 IMU 测试模式；**IMU 已真机确认工作正常**（静止时垂直加速度约 9.76 m/s²，符合重力加速度，验证了焊接质量）；**SD 卡写入已真机确认成功**（此前"未检测到 SD 卡"的现象其实是测试流程跳过了 GNSS/波谱循环导致 SD 写入调用点从未被执行到，不是硬件故障）；烧录工具链重构，删除了 `svl_flash.py`/`artemis_svl_with_reset.py`/`flash_macos.sh`，替换为 `svl_flash_v2.py`/`run_all_steps.sh`。
@@ -97,7 +103,7 @@ python3 firmware/svl_flash_v2.py /dev/cu.wchusbserialXXXX -f firmware/omb_nano_l
 ## 工程细节坑点
 
 - **DTR 脉冲是 bootloader 进入的唯一可靠方式**——本板无物理复位键，详见上方「烧录」一节。
-- **U5 未焊接时需要外部注入 3.3V**到其 VOUT/GND 焊盘，同时 USB-C 必须接好；电池绝不能与 USB-C 同时接入。
+- **U5 未焊接时需要外部注入 3.3V**到其 VOUT/GND 焊盘，同时 USB-C 必须接好；当前原型机供电以prototype-status.md为准，其他接法需重新核对。
 - **SD 卡引脚不在任何 Apollo3 硬件 IOM 的 SPI pad 上**（CS=D27, MOSI=D26, SCK=D28, MISO=D25, CD=D22 是任意 GPIO 组合），因此必须用软件 SPI（`SoftSpiDriver`），且补丁必须全局打（见上文）。
 - **烧录波特率 115200 ≠ 运行波特率 1,000,000**，串口监视器配错波特率是最常见的"看起来失败"原因。
 - **`time_manger.cpp` 文件名拼写错误是真实的**，不要"顺手"改成 `time_manager.cpp`，否则会与 `time_manager.h` 的引用关系断开。
@@ -108,8 +114,8 @@ python3 firmware/svl_flash_v2.py /dev/cu.wchusbserialXXXX -f firmware/omb_nano_l
 
 ## 与 buoy 仓库的关系
 
-PCB 硬件设计、BOM、组装说明、原理图级别的引脚/网络参考都在姊妹仓库 **`../buoy`**（同一工作区，经 `buoy.code-workspace` 关联）。本仓库（`omb-nano`）不含任何硬件设计文件，只有固件。
+PCB 硬件设计、BOM、组装说明、原理图级别的引脚/网络参考都在姊妹仓库 **`../omb-nano-extend`**（同一工作区，经 `buoy.code-workspace` 关联）。本仓库（`omb-nano`）不含任何硬件设计文件，只有固件。
 
-- 涉及**哪些元件 DNP/已贴片、BOM 选型来源、外壳是否匹配、某个具体引脚在原理图上接到哪个网络**的问题 —— 去 `buoy` 仓库，具体看 `buoy/.github/agents/pcb-hardware-expert.agent.md`（引脚级别的权威参考）和 `buoy/docs/2.PCB备料与组装指南.md`（组装/DNP 权威文档）。
+- 涉及**哪些元件 DNP/已贴片、BOM 选型来源、外壳是否匹配、某个具体引脚在原理图上接到哪个网络**的问题 —— 去 `buoy` 仓库，具体看 `omb-nano-extend/.github/agents/pcb-hardware-expert.agent.md`（引脚级别的权威参考）和 `omb-nano-extend/docs/2.pcb-procurement-and-assembly-guide.md`（组装/DNP 权威文档）。
 - 涉及**固件逻辑、编译/烧录机制、代码里的引脚映射**的问题 —— 留在本仓库。
-- 提示：`buoy/docs/buoy_notes.md`（研究日志）和 `buoy/docs/TODO-next-version.md`（2026-06-25 的下一步计划，其内容大部分已在本仓库执行完成，见上方「已完成的工作」）都记录了本仓库里发生的工作，可作为叙事性的交叉印证，但本仓库自己的 `git log` 和 `docs/固件变更记录.md` 才是关于"这里到底做过什么"的权威记录。
+- 提示：`omb-nano-extend/docs/buoy_notes.md`（研究日志）和 `omb-nano-extend/todo.md`（2026-06-25 的下一步计划，其内容大部分已在本仓库执行完成，见上方「已完成的工作」）都记录了本仓库里发生的工作，可作为叙事性的交叉印证，但本仓库自己的 `git log` 和 `docs/固件变更记录.md` 才是关于"这里到底做过什么"的权威记录。

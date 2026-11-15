@@ -1,4 +1,5 @@
 #include "sd_manager.h"
+#include "imu_capture.h"
 
 #include "SdFat.h"
 
@@ -125,4 +126,25 @@ bool SDManager::write_test_file(void){
   Serial.println(line);
   wdt.restart();
   return true;
+}
+
+bool SDManager::log_imu_capture(const IMUCaptureSample *samples, size_t count) {
+  if (!ready || count == 0) return false;
+  char name[13];
+  for (unsigned int run = 0; run < 10000; ++run) {
+    snprintf(name, sizeof(name), "IMU%04u.CSV", run);
+    if (sd.exists(name)) continue;
+    File32 file = sd.open(name, O_WRITE | O_CREAT | O_EXCL);
+    if (!file) return false;
+    for (size_t i = 0; i < count; ++i) {
+      print_capture_sample(file, samples[i]);
+      wdt.restart();
+    }
+    const bool ok = file.sync() && !file.getWriteError();
+    file.close();
+    Serial.print(F("capture: SD file ")); Serial.println(name);
+    return ok;
+  }
+  Serial.println(F("capture: no free IMU filename"));
+  return false;
 }

@@ -30,6 +30,9 @@ class IMU_Manager{
         bool get_new_reading(float & acc_N_inout, float & acc_E_inout, float & acc_D_inout,
                              float & yaw___inout, float & pitch_inout, float & roll__inout
                             );
+        // Latest sensor event; no new read and no additional filtering.
+        void get_raw_axes(float &ax, float &ay, float &az,
+                          float &gx, float &gy, float &gz) const;
         bool stop_IMU();
 
     private:
