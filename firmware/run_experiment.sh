@@ -117,7 +117,7 @@ source_state=clean
     printf '\n数字数据：[%s](%s)。\n' "$(basename "${log_file%.log}.csv")" "$(basename "${log_file%.log}.csv")"
     printf '\n本次日志中的配置：\n```text\n'
     if [[ -f "$log_file" ]]; then
-        grep -E 'DEPLOYMENT_MODE:|use_dummy_imu_data:|using total number of samples:|imu_capture_only:|imu_capture_samples:|version :' "$log_file" || true
+        grep -E 'DEPLOYMENT_MODE:|use_dummy_imu_data:|using total number of samples:|imu_capture_only:|imu_capture_samples:|version :' "$log_file" | tr -d '\r' || true
     fi
     printf '\n```\n'
 } >> "$experiment_dir/record.md"
