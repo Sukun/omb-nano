@@ -27,6 +27,8 @@ pip install pyserial
 | `run_all_steps.sh` | 一键全流程：编译→烧录→IMU/SD 测试（历史流程） |
 | `svl_flash_v2.py` | SVL 烧录工具（容错乱码+小帧+重试） |
 | `imu_listen.py` | IMU 串口监听（DTR 复位+1Mbps，自动检测串口） |
+| `ble_capture_receive.py` | BLE 采集接收（Bleak Central，协议 v1，见下方说明） |
+| `requirements-ble-receiver.txt` | BLE 接收端隔离环境的固定依赖（bleak） |
 | `hardware_test.py` | 硬件测试工具（替代 screen） |
 | `diagnose_bootloader.py` | bootloader 通信诊断（排障用） |
 
@@ -39,6 +41,28 @@ pip install pyserial
 | `omb_nano_latest.bin` | 132648 B | latest | **我们的修改版**（TEST-MODE）：DEPLOYMENT_MODE=1、跳过 GNSS 循环、启用 IMU 调试块、新增 SD 卡 `write_test_file()` 写入测试。每次编译后自动覆盖 |
 
 > **烧录顺序建议**：先用 `v0.2.0.bin` 验证板子上电正常 → 再烧录 `omb_nano_latest.bin` 测试 IMU 和 SD 卡功能。
+
+## BLE 采集接收（PLAN_03）
+
+`ble_capture_receive.py` 是电脑端 Bleak Central：连接广播名 `OMB-Nano` 的板子，
+先订阅 Data 通知（`...0003`），再向 Control（`...0002`）写 START（Write With
+Response），按协议 v1 重组 600 条九列 CSV。只有 END 存在且 actual_count=600、
+status=0、seq 0—599 齐全、每条 CSV 合法并成功确认文件时才生成正式
+`capture.csv`；任何失败都保留 `capture.partial` 与 `diagnostics.log`。
+协议常量以 `src/ble_capture_engine.h` 为唯一权威。
+
+```bash
+python3 -m venv .venv-ble-receiver
+.venv-ble-receiver/bin/pip install -r firmware/requirements-ble-receiver.txt
+.venv-ble-receiver/bin/python firmware/ble_capture_receive.py                  # 扫描 OMB-Nano
+.venv-ble-receiver/bin/python firmware/ble_capture_receive.py --address <地址> --out ~/ble_captures
+```
+
+一次运行对应板端一次启动；板端 DONE 后不再接受第二次 START，本工具也不跨连接
+续接。每轮在 `--out` 下新建含 run_id 的独占会话目录，不复用、不覆盖历史结果。
+
+主机模拟测试（不需要板子，也不代表真机 BLE 性能）：
+`python3 -m pytest -q tests/test_ble_receiver.py`。
 
 ## 实验1：桌面复查
 

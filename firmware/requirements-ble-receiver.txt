@@ -1,0 +1,8 @@
+# PLAN_03 电脑端 BLE 接收（Bleak Central）的隔离环境。
+# 安装：
+#   python3 -m venv .venv-ble-receiver
+#   .venv-ble-receiver/bin/pip install -r firmware/requirements-ble-receiver.txt
+#
+# 版本固定在实测安装的版本上；升级需重新跑
+# `python3 -m pytest -q tests/test_ble_receiver.py` 并记录新版本。
+bleak==0.22.3

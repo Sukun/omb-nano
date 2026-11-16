@@ -19,5 +19,9 @@ firmware/tracker.ino.bin
 __pycache__/
 *.pyc
 
+# PLAN_03 BLE receiver: isolated venv and captured experiment data
+/.venv-ble-receiver/
+/firmware/ble_captures/
+
 # stray editor backups
 *.bak
