@@ -64,6 +64,11 @@ python3 -m venv .venv-ble-receiver
 主机模拟测试（不需要板子，也不代表真机 BLE 性能）：
 `python3 -m pytest -q tests/test_ble_receiver.py`。
 
+板端 BLE 固件产物为 `omb_nano_ble_capture.bin`（230968 B，SHA256 `e60189e8…342ad415`）。
+烧录前先读 [PLAN_04 交付与人工验收](../docs/4.BLE采集固件交付与人工验收.md)，随后执行
+`python3 firmware/svl_flash_v2.py <实际串口路径> -f firmware/omb_nano_ble_capture.bin -b 115200 -v --frame-size 16 --frame-delay 0.15`；
+原有固件恢复、供电安全与真机验收清单同样见该文档。
+
 ## 实验1：桌面复查
 
 运行 `bash firmware/run_experiment.sh --experiment test1_2026-11-14_land-static --source real`：检查环境、打开实验记录、按Enter默认监听90秒，收到完成标记后提前结束、保存并打开日志。说明和输出均放在 [实验1文件夹](../../omb-nano-extend/experiments/test1_2026-11-14_land-static/record.md)。仅检查环境加 `--check`。脚本不编译或烧录，板上配置以启动输出为准。
