@@ -7,6 +7,9 @@
 test_small.bin
 temp.txt
 
+# Isolated Apollo3 2.2.1 build workspace (logs, downloaded archives, extracted references)
+/.apollo3-2.2.1-build/
+
 # Docker build artifacts
 firmware/*.axf
 firmware/*.map

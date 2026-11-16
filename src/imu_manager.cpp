@@ -1,4 +1,5 @@
 #include "imu_manager.h"
+#include "BurstMode.h"
 
 Adafruit_ISM330DHCX ism330dhcx;
 //Adafruit_LIS3MDL lis3mdl;
@@ -9,9 +10,9 @@ bool IMU_Manager::start_IMU(){
   Serial.println(F("start the IMU"));
   wdt.restart();
 
-  pinMode(LED, g_AM_HAL_GPIO_OUTPUT_4); // Make the LED pin an output
+  pinMode(LED, OUTPUT); // Make the LED pin an output
   digitalWrite(LED, HIGH);
-  pinMode(IMUPwr, g_AM_HAL_GPIO_OUTPUT_12); // 12 mA
+  pinMode(IMUPwr, OUTPUT); // 12 mA
   digitalWrite(IMUPwr, HIGH);
   delay(500);
 
@@ -87,7 +88,7 @@ bool IMU_Manager::start_IMU(){
 }
 
 bool IMU_Manager::stop_IMU(){
-  pinMode(LED, g_AM_HAL_GPIO_OUTPUT_4); // Make the LED pin an output
+  pinMode(LED, OUTPUT); // Make the LED pin an output
   digitalWrite(LED, HIGH);
 
    disableBurstMode();
@@ -98,7 +99,7 @@ bool IMU_Manager::stop_IMU(){
   wdt.restart();
   delay(100);
 
-  pinMode(IMUPwr, g_AM_HAL_GPIO_OUTPUT_12);
+  pinMode(IMUPwr, OUTPUT);
   digitalWrite(IMUPwr, LOW);
 
    return true;

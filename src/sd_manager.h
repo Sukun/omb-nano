@@ -13,6 +13,7 @@
 //
 // IMU capture buffers a run and writes SD after the IMU is off.
 struct IMUCaptureSample;
+class SdFat32;
 class SDManager{
   public:
     // Initialise software SPI + mount the card. Returns false (and disables logging) if
@@ -20,6 +21,10 @@ class SDManager{
     bool setup(void);
 
     bool is_ready(void) const;
+
+    // Mounted FAT volume for the read-only serial export (sd_export.cpp), or
+    // nullptr when no card was mounted. The export path only reads.
+    SdFat32 *volume(void);
 
     // Append the newest GNSS fix to GNSS.CSV  (columns: posix,lat_1e7,lon_1e7).
     void log_latest_gnss_fix(void);

@@ -13,10 +13,15 @@
 
 constexpr unsigned long baudrate_debug_serial = 1000000;
 
-// for using the I2C port corresponding to the PCB pins
-// constexpr int i2c_port_number {1};
-// for using the I2C port corresponding to the Qwiic connector
-constexpr int i2c_port_number {0}; // for IMU
+// I2C pins from the 2026-05-30 PCB project (U14 = SparkFun Artemis module):
+//   I_SDA  = U14 pad 23 (D6)   I_SCL  = U14 pad 12 (D5)
+//   GPS_SDA = U14 pad 52 (D43) GPS_SCL = U14 pad 53 (D42)
+// The 1.2.1 core derived these pads from an IOM instance number; the 2.2.1 core
+// takes the SDA/SCL pins explicitly.
+constexpr int i2c_imu_sda_pin {6};
+constexpr int i2c_imu_scl_pin {5};
+constexpr int i2c_gnss_sda_pin {43};
+constexpr int i2c_gnss_scl_pin {42};
 
 // TODO: use some form of constexpr if instead
 // first declare the variables and document

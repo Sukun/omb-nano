@@ -1,6 +1,10 @@
 #include "sd_manager.h"
 #include "imu_capture.h"
 
+// SdFat defaults its begin() chip select to SS, which the mbed bridge does not define.
+#ifndef SS
+#define SS SD_CS_PIN
+#endif
 #include "SdFat.h"
 
 #include "params.h"            // nbr_wave_packet_freqs
@@ -39,6 +43,10 @@ bool SDManager::setup(void){
 
 bool SDManager::is_ready(void) const {
   return ready;
+}
+
+SdFat32 *SDManager::volume(void) {
+  return ready ? &sd : nullptr;
 }
 
 void SDManager::log_latest_gnss_fix(void){

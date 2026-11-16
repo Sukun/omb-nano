@@ -3,6 +3,7 @@
 
 #include "WDT.h"
 
-extern APM3_WDT wdt;
+// The 2.2.1 WDT library owns the global `wdt` object (Apollo3WDT wdt); the old
+// core needed this repository to define it.
 
 #endif

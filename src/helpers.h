@@ -7,7 +7,8 @@
 #include "etl.h"
 #include "etl/vector.h"
 
-#include "ard_supers/avr/dtostrf.h"
+// 2.2.1 moved the AVR compatibility headers under the mbed bridge.
+#include "api/deprecated-avr-comp/avr/dtostrf.h"
 
 //--------------------------------------------------------------------------------
 // common printing buffer

@@ -12,6 +12,7 @@
 #include "wave_analyzer.h"
 #include "thermistors_manager.h"
 #include "sd_manager.h"
+#include "sd_export.h"
 #include "imu_capture.h"
 
 // TODO: board_imu_manger -> board_imu_manager
@@ -43,6 +44,9 @@ void setup(){
 
   if (imu_capture_only) {
     capture_real_imu();
+    // The export line is only announced after the boot capture: the host tool
+    // waits for this marker instead of sending commands into the capture.
+    board_sd_export.print_ready();
     return;
   }
 
@@ -172,14 +176,20 @@ void setup(){
 
   // At this stage, we have got the initial GNSS fix and the RTC is in UTC.
   // After that, will wake up at given UTC times (see the params.h)
+
+  // Read-only SD export is available in the normal deployment loop too, but the
+  // loop then sleeps between measurements, so it only answers around wake-ups.
+  board_sd_export.print_ready();
 }
 
 void loop(){
   if (imu_capture_only) {
+    board_sd_export.poll();
     wdt.restart();
     delay(100);
     return;
   }
+  board_sd_export.poll();
   //--------------------------------------------------------------------------------
   // go to sleep until next measurement
 

@@ -1,0 +1,95 @@
+# Isolated build environment for the SparkFun Apollo3 core 2.2.1 migration (PLAN_01).
+# The historical 1.2.1 environment is preserved unchanged in ./Dockerfile.
+#
+# The only toolchain published for this core is x86_64-linux, so the image is built
+# for linux/amd64 (emulated on Apple Silicon).
+FROM --platform=linux/amd64 ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates curl build-essential python3-minimal tar xz-utils \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+ARG ARDUINO_CLI_VERSION=1.6.0
+ARG ARDUINO_CLI_SHA256=321ee249f44c78053234fec0f36101092bc6021bf24939e15e0cc2449c5ed250
+RUN curl -fsSL \
+        -o /tmp/arduino-cli.tar.gz \
+        "https://github.com/arduino/arduino-cli/releases/download/v${ARDUINO_CLI_VERSION}/arduino-cli_${ARDUINO_CLI_VERSION}_Linux_64bit.tar.gz" \
+    && echo "${ARDUINO_CLI_SHA256}  /tmp/arduino-cli.tar.gz" | sha256sum -c - \
+    && tar -xzf /tmp/arduino-cli.tar.gz -C /usr/local/bin arduino-cli \
+    && rm /tmp/arduino-cli.tar.gz
+
+ARG APOLLO3_INDEX_URL=https://raw.githubusercontent.com/sparkfun/Arduino_Apollo3/main/package_sparkfun_apollo3_index.json
+ENV APOLLO3_INDEX_URL=${APOLLO3_INDEX_URL}
+
+RUN arduino-cli config init
+RUN arduino-cli config add board_manager.additional_urls "${APOLLO3_INDEX_URL}"
+RUN arduino-cli core --additional-urls "${APOLLO3_INDEX_URL}" update-index
+
+# arduino-cli verifies the core archive against the index checksum during install;
+# also verify the archive explicitly so the build log records its identity.
+ARG APOLLO3_ARCHIVE_URL=https://github.com/sparkfun/Arduino_Apollo3/releases/download/v2.2.1/Arduino_Apollo3.tar.gz
+ARG APOLLO3_ARCHIVE_SHA256=9906c1cf923fcc93441da24154bb68e6cd716f9b9477a33a7bbcfcec231fb694
+RUN curl -fsSL "${APOLLO3_ARCHIVE_URL}" -o /tmp/Apollo3-core.tar.gz \
+    && echo "${APOLLO3_ARCHIVE_SHA256}  /tmp/Apollo3-core.tar.gz" | sha256sum -c - \
+    && sha256sum /tmp/Apollo3-core.tar.gz \
+    && rm /tmp/Apollo3-core.tar.gz
+
+RUN arduino-cli core --additional-urls "${APOLLO3_INDEX_URL}" install "SparkFun:apollo3@2.2.1"
+
+RUN arduino-cli lib update-index
+
+# Same library set and versions as the historical image (Dockerfile), plus the
+# reviewed BLE library for the next plan stage. All versions are pinned.
+RUN arduino-cli lib install "Embedded Template Library ETL@20.48.1"
+RUN touch /root/Arduino/libraries/Embedded_Template_Library_ETL/src/etl.h
+RUN arduino-cli lib install "Time@1.6.1"
+RUN arduino-cli lib install "SparkFun Qwiic Power Switch Arduino Library@1.0.2"
+RUN arduino-cli lib install "SparkFun u-blox GNSS v3@3.1.15"
+RUN arduino-cli lib install "IridiumSBDi2c@3.1.0"
+RUN arduino-cli lib install "Adafruit LSM6DS@4.3.1"
+RUN arduino-cli lib install "Adafruit BusIO@1.7.2"
+RUN arduino-cli lib install "Adafruit LIS3MDL@1.2.5"
+RUN arduino-cli lib install "Adafruit AHRS@2.2.4"
+RUN arduino-cli lib install "OneWire@2.3.6"
+RUN arduino-cli lib install "ArduinoBLE@1.3.7"
+
+# Jean's Artemis-compatible forks, pinned to the exact commits used by the historical
+# image. Downloaded as commit tarballs so no git checkout is involved.
+ARG BUSIO_COMMIT=b1031023b48cb1f4ad6aeef7d58c4bccc12562d0
+ARG BUSIO_SHA256=2b32be3a760ef974da88b67d8193c92604e9a39d5a403ccfeeb84d6255dc11b5
+RUN curl -fsSL "https://codeload.github.com/jerabaul29/Adafruit_BusIO/tar.gz/${BUSIO_COMMIT}" -o /tmp/busio.tar.gz \
+    && echo "${BUSIO_SHA256}  /tmp/busio.tar.gz" | sha256sum -c - \
+    && rm -rf /root/Arduino/libraries/Adafruit_BusIO \
+    && mkdir -p /tmp/busio \
+    && tar -xzf /tmp/busio.tar.gz -C /tmp/busio \
+    && mv "/tmp/busio/Adafruit_BusIO-${BUSIO_COMMIT}" /root/Arduino/libraries/Adafruit_BusIO
+
+ARG LSM6DS_COMMIT=2f63f61c255bc0556a05bdfb0051bafb01fe7ddc
+ARG LSM6DS_SHA256=9f07000cbabf7bee46eda7016507073a66a84f369ee3f63be854b6e8bcfc9d72
+RUN curl -fsSL "https://codeload.github.com/jerabaul29/Adafruit_LSM6DS/tar.gz/${LSM6DS_COMMIT}" -o /tmp/lsm6ds.tar.gz \
+    && echo "${LSM6DS_SHA256}  /tmp/lsm6ds.tar.gz" | sha256sum -c - \
+    && rm -rf /root/Arduino/libraries/Adafruit_LSM6DS \
+    && mkdir -p /tmp/lsm6ds \
+    && tar -xzf /tmp/lsm6ds.tar.gz -C /tmp/lsm6ds \
+    && mv "/tmp/lsm6ds/Adafruit_LSM6DS-${LSM6DS_COMMIT}" /root/Arduino/libraries/Adafruit_LSM6DS
+
+ARG ONEWIRE_COMMIT=15dbcc4be4f43474e0e3501ea43a70a353d2e513
+ARG ONEWIRE_SHA256=278b447c36adf3926e17b7fc2aa3f1ee3abfd89cd7ed061725a961f9b45e88ff
+RUN curl -fsSL "https://codeload.github.com/jerabaul29/OneWire/tar.gz/${ONEWIRE_COMMIT}" -o /tmp/onewire.tar.gz \
+    && echo "${ONEWIRE_SHA256}  /tmp/onewire.tar.gz" | sha256sum -c - \
+    && rm -rf /root/Arduino/libraries/OneWire \
+    && mkdir -p /tmp/onewire \
+    && tar -xzf /tmp/onewire.tar.gz -C /tmp/onewire \
+    && mv "/tmp/onewire/OneWire-${ONEWIRE_COMMIT}" /root/Arduino/libraries/OneWire
+
+# SD card on arbitrary (non-IOM) GPIOs -> SdFat software SPI. The setting must be
+# patched globally so every SdFat translation unit agrees (avoids ODR mismatch).
+RUN arduino-cli lib install "SdFat@2.2.3"
+RUN sed -i 's/#define SPI_DRIVER_SELECT 0/#define SPI_DRIVER_SELECT 2/' /root/Arduino/libraries/SdFat/src/SdFatConfig.h \
+    && grep -n "define SPI_DRIVER_SELECT" /root/Arduino/libraries/SdFat/src/SdFatConfig.h
+
+WORKDIR /tracker

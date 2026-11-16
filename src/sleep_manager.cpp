@@ -122,8 +122,10 @@ void wake_up(void){
   am_hal_gpio_pinconfig(21 /* SWDIO */, g_AM_BSP_GPIO_SWDIO);
 
   //Turn on ADC
-  ap3_adc_setup();
-  ap3_set_pin_to_analog(busVoltagePin);
+  // 2.2.1 configures the ADC lazily on the first analogRead(); the old
+  // ap3_adc_setup()/ap3_set_pin_to_analog() pair has no direct replacement,
+  // so keep the 14-bit resolution setting that callers rely on.
+  analogReadResolution(14);
 
   Serial.begin(baudrate_debug_serial);
   delay(100);

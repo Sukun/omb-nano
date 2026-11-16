@@ -328,7 +328,9 @@ void WaveAnalyzer::perform_welch_analysis_imu_data(void){
 
 void WaveAnalyzer::init_fast_instance(void){
   Serial.println(F("start init fast struct"));
-  crrt_arm_status = arm_rfft_2048_fast_init_f32(&crrt_arm_rfft_fast_instance_f32);
+  // The 2.2.1 CMSIS-DSP dropped the fixed-2048 init helper; the general
+  // initialiser builds the same tables for the requested length.
+  crrt_arm_status = arm_rfft_fast_init_f32(&crrt_arm_rfft_fast_instance_f32, fft_length);
   Serial.print(F("done init fast struct, status: ")); Serial.println(crrt_arm_status);
   wdt.restart();
 }

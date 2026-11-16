@@ -70,7 +70,9 @@ class IridiumManager{
     // But still, be careful, and double check both the formatting and the logics of your messages before sending them!!
 
   private:
-    Uart iridium_serial{1, 40, 39};
+    // 2.2.1 exposes UART(tx, rx) instead of the 1.2.1 Uart(instance, tx, rx);
+    // pads 40/39 are the same UART1 TX/RX pair used before.
+    UART iridium_serial{40, 39};
     IridiumSBD iridium_sbd{iridium_serial, -1, iridiumRI};
 
     unsigned char iridium_tx_raw_buffer[iridium_tx_buffer_size];

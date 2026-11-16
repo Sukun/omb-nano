@@ -3,7 +3,8 @@
 void print_params(void){
     Serial.print(F("version : ")); Serial.println(ON_VERSION);
     Serial.print(F("baudrate_debug_serial : ")); Serial.println(baudrate_debug_serial );
-    Serial.print(F("i2c_port_number: ")); Serial.println(i2c_port_number );
+    Serial.print(F("i2c imu sda/scl pins: ")); Serial.print(i2c_imu_sda_pin); Serial.print(F("/")); Serial.println(i2c_imu_scl_pin);
+    Serial.print(F("i2c gnss sda/scl pins: ")); Serial.print(i2c_gnss_sda_pin); Serial.print(F("/")); Serial.println(i2c_gnss_scl_pin);
 
     Serial.println(F("----- TEST_MODE -----"));
     Serial.print(F("DEPLOYMENT_MODE: ")); Serial.println(DEPLOYMENT_MODE);

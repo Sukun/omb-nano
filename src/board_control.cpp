@@ -1,14 +1,14 @@
 #include "board_control.h"
 #include "gnss_manager.h"
 
-TwoWire ArtemisWire(i2c_port_number);
-TwoWire GnssWire(3);
+TwoWire ArtemisWire(i2c_imu_sda_pin, i2c_imu_scl_pin);
+TwoWire GnssWire(i2c_gnss_sda_pin, i2c_gnss_scl_pin);
 
 void blink_LED_n_times(unsigned int number_of_blinks, float frequency_hz){
   wdt.restart();  // we choose to restart at the start and end, but not in loop as a way to make sure not so much blinking that we freeze.
 
   unsigned long delay_half_blink = static_cast<unsigned long>(1.0 / frequency_hz * 1000.0 / 2.0);
-  pinMode(LED, g_AM_HAL_GPIO_OUTPUT_4); // Make the LED pin an output
+  pinMode(LED, OUTPUT); // Make the LED pin an output
   delay(10);
 
   for (unsigned int i=0; i<number_of_blinks; i++){
@@ -22,11 +22,11 @@ void blink_LED_n_times(unsigned int number_of_blinks, float frequency_hz){
 }
 
 void setup_pins(void){
-  pinMode(LED, g_AM_HAL_GPIO_OUTPUT_4); // Make the LED pin an output
-  /* pinMode(IMUPwr, g_AM_HAL_GPIO_OUTPUT_12); // 12 mA */
-  pinMode(IMUPwr, g_AM_HAL_GPIO_OUTPUT_12); // 12 mA
+  pinMode(LED, OUTPUT); // Make the LED pin an output
+  /* pinMode(IMUPwr, OUTPUT); // 12 mA */
+  pinMode(IMUPwr, OUTPUT); // IMU power (I_VCC net via U14 pad 44 / GPIO31)
 
-  pinMode(iridiumSleep, g_AM_HAL_GPIO_OUTPUT_12); // Configure the Iridium Power Pin (connected to the ADM4210 ON pin)
+  pinMode(iridiumSleep, OUTPUT); // Configure the Iridium Power Pin (connected to the ADM4210 ON pin)
   digitalWrite(iridiumSleep, LOW); // Disable Iridium Power (HIGH = enable; LOW = disable)
 
   // Configure GNSS enable pin
@@ -74,7 +74,7 @@ void turn_iridium_on(void){
   delay(100);
   /* pinMode(superCapChgEN, OUTPUT); // Configure the super capacitor charger enable pin (connected to LTC3225 !SHDN) */
   /* digitalWrite(superCapChgEN, HIGH); // Enable the super capacitor charger */
-  pinMode(iridiumSleep, g_AM_HAL_GPIO_OUTPUT_12); // Configure the Iridium Power Pin (connected to the ADM4210 ON pin)
+  pinMode(iridiumSleep, OUTPUT); // Configure the Iridium Power Pin (connected to the ADM4210 ON pin)
   digitalWrite(iridiumSleep, HIGH); // Enable Iridium Power
   delay(1000);
   Serial.println("Waiting for capacitors to charge..");
@@ -84,7 +84,7 @@ void turn_iridium_on(void){
 
 void turn_iridium_off(void){
   Serial.println(F("turn iridium off"));
-  pinMode(iridiumSleep, g_AM_HAL_GPIO_OUTPUT_12); // Configure the Iridium Power Pin (connected to the ADM4210 ON pin)
+  pinMode(iridiumSleep, OUTPUT); // Configure the Iridium Power Pin (connected to the ADM4210 ON pin)
   digitalWrite(iridiumSleep, LOW); // Disable Iridium Power (HIGH = enable; LOW = disable)
   /* pinMode(superCapChgEN, OUTPUT); // Configure the super capacitor charger enable pin (connected to LTC3225 !SHDN) */
   /* digitalWrite(superCapChgEN, LOW); // Disable the super capacitor charger (HIGH = enable; LOW = disable) */
