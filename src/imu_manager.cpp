@@ -87,6 +87,82 @@ bool IMU_Manager::start_IMU(){
   return true;
 }
 
+bool IMU_Manager::start_IMU_bounded(void (*service)(void *context), void *service_context){
+  Serial.println(F("start the IMU (bounded BLE init)"));
+  wdt.restart();
+
+  pinMode(LED, OUTPUT); // Make the LED pin an output
+  digitalWrite(LED, HIGH);
+  pinMode(IMUPwr, OUTPUT); // 12 mA
+  digitalWrite(IMUPwr, HIGH);
+  delay(500);
+
+  enableBurstMode();
+  delay(100);
+
+  ArtemisWire.begin();
+  delay(100);
+  ArtemisWire.setClock(1000000);
+  delay(100);
+  wdt.restart();
+  Serial.println(F("started ArtemisWire"));
+  delay(500);
+  wdt.restart();
+
+  delay(500);
+  wdt.restart();
+
+  Serial.println("Adafruit ISM330DHCX start! (bounded)");
+  bool chip_found {false};
+  for (size_t attempt = 0; attempt < nbr_chip_detect_attempts_bounded; ++attempt){
+    if (ism330dhcx.begin_I2C(LSM6DS_I2CADDR_DEFAULT,
+                     &ArtemisWire, 0)) {
+      chip_found = true;
+      break;
+    }
+    Serial.println("Failed to find ISM330DHCX chip, will try again...");
+    delay(500);
+    wdt.restart();
+    if (service != nullptr){
+      service(service_context);
+    }
+  }
+  if (!chip_found){
+    Serial.println("ISM330DHCX not found after bounded retries");
+    return false;
+  }
+  Serial.println("ISM330DHCX Found!");
+  wdt.restart();
+
+  set_sensors_parameters();
+  delay(100);
+  print_sensors_information();
+  delay(100);
+  wdt.restart();
+
+  // initialize the filter
+  Kalman_filter.begin(update_frequency_Kalman_Hz);
+  wdt.restart();
+
+  time_last_accel_gyro_reading_us = micros();
+  time_last_Kalman_update_us = micros();
+  time_last_IMU_update_us = micros();
+
+  // same 100-reading warm-up as the legacy path, but every result is checked
+  for (size_t i = 0; i < nbr_warmup_readings_bounded; ++i){
+    if (!get_new_reading(dummy_inout, dummy_inout, dummy_inout, dummy_inout, dummy_inout, dummy_inout)){
+      Serial.println(F("ISM330DHCX warm-up read failed"));
+      return false;
+    }
+    if (service != nullptr){
+      service(service_context);
+    }
+    wdt.restart();
+  }
+
+  return true;
+}
+
 bool IMU_Manager::stop_IMU(){
   pinMode(LED, OUTPUT); // Make the LED pin an output
   digitalWrite(LED, HIGH);

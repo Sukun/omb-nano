@@ -33,6 +33,13 @@ constexpr int i2c_gnss_scl_pin {42};
 constexpr bool imu_capture_only {true};
 constexpr size_t imu_capture_samples {600};  // 60 s at the existing 10 Hz output
 
+// BLE capture mode (PLAN_02): one connection session triggers one 600-sample
+// run over BLE. The checked-in default is the legacy serial capture; in BLE
+// mode setup() initialises the peripheral instead of running the boot capture.
+constexpr bool ble_capture_mode {false};
+static_assert(!(ble_capture_mode && imu_capture_only),
+              "BLE capture and the legacy serial boot capture are exclusive");
+
 //--------------------------------------------------------------------------------
 // GNSS params
 

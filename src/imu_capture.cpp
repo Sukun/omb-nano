@@ -4,9 +4,19 @@
 #include "params.h"
 #include "watchdog_manager.h"
 
+namespace {
+
+// Buffer the one-minute run so SD writes cannot stall sensor acquisition.
+IMUCaptureSample capture_samples[imu_capture_samples];
+
+}  // namespace
+
+IMUCaptureSample *capture_sample_buffer() {
+    return capture_samples;
+}
+
 void capture_real_imu() {
-    // Buffer the one-minute run so SD writes cannot stall sensor acquisition.
-    static IMUCaptureSample samples[imu_capture_samples];
+    IMUCaptureSample *samples = capture_sample_buffer();
     size_t count = 0;
     Serial.println(F("capture: real IMU, 10 Hz; columns ms,seq,ax,ay,az,gx,gy,gz,acc_D"));
     board_imu_manger.start_IMU();

@@ -25,5 +25,8 @@ inline size_t print_capture_sample(Print &out, const IMUCaptureSample &sample) {
     return n;
 }
 
+// The single 600-sample run buffer, shared by the serial and BLE capture paths.
+IMUCaptureSample *capture_sample_buffer();
+
 void capture_real_imu();
 #endif

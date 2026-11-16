@@ -26,6 +26,13 @@ class IMU_Manager{
     public:
         bool start_IMU();
 
+        // BLE-mode initialisation: bounded chip detection (3 attempts) and a
+        // warm-up that fails on any of the 100 get_new_reading() errors. The
+        // optional service hook runs between retries and warm-up readings so
+        // the BLE link and the watchdog keep being serviced. The legacy
+        // start_IMU() above is untouched.
+        bool start_IMU_bounded(void (*service)(void *context), void *service_context);
+
         // NOTE: we could get more information if we wanted
         bool get_new_reading(float & acc_N_inout, float & acc_E_inout, float & acc_D_inout,
                              float & yaw___inout, float & pitch_inout, float & roll__inout
@@ -42,6 +49,9 @@ class IMU_Manager{
 
         // run the Kalman filter at 100Hz
         static constexpr float update_frequency_Kalman_Hz {100.0};
+        // bounded BLE-mode init: chip detection attempts and warm-up readings
+        static constexpr size_t nbr_chip_detect_attempts_bounded {3};
+        static constexpr size_t nbr_warmup_readings_bounded {100};
         // read at 833Hz the accel and gyro; i.e. each 1200us
         static constexpr unsigned long nbr_micros_between_accel_gyro_readings {1200UL};
         // read at 560Hz the mag; i.e. each 1785us

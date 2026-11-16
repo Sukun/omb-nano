@@ -14,6 +14,7 @@
 #include "sd_manager.h"
 #include "sd_export.h"
 #include "imu_capture.h"
+#include "ble_capture.h"
 
 // TODO: board_imu_manger -> board_imu_manager
 
@@ -41,6 +42,13 @@ void setup(){
 
   // offer a print of the params used for the setup of the instrument
   print_params();
+
+  if (ble_capture_mode) {
+    // BLE mode: the host START drives the capture. No boot capture, no SD
+    // export line (Serial is diagnostics-only in this mode).
+    board_ble_capture.setup();
+    return;
+  }
 
   if (imu_capture_only) {
     capture_real_imu();
@@ -183,6 +191,12 @@ void setup(){
 }
 
 void loop(){
+  if (ble_capture_mode) {
+    board_ble_capture.loop();
+    wdt.restart();
+    delay(2);
+    return;
+  }
   if (imu_capture_only) {
     board_sd_export.poll();
     wdt.restart();
