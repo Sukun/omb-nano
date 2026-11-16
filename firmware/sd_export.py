@@ -221,7 +221,12 @@ def download(ser, lines, name, out_dir, overwrite, log, io_timeout):
                     + (f"，预期 {expected}" if expected is not None else "")
                     + f"。临时文件保留在 {part}")
             if line.startswith("SDX-ERR"):
-                raise_for_device_error(line, IncompleteTransfer)
+                try:
+                    raise_for_device_error(line, IncompleteTransfer)
+                except FileNotFoundOnCard:
+                    # 文件不在卡上：空的 .part 没有诊断价值，删掉后再报原错误。
+                    part.unlink(missing_ok=True)
+                    raise
             if line.startswith("SDX-BEGIN"):
                 parts = line.split()
                 if len(parts) != 3:
